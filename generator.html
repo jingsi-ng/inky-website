@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pattern Generator — inky · 印纪</title>
+  <meta name="description" content="Type a name, pick an occasion and watch a one-of-a-kind brushstroke pattern generate. Save your order code and we'll print it.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-generator">
+
+  <!-- ===== Navigation ===== -->
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="wordmark" href="index.html">inky <span class="wordmark-dot">·</span> 印纪</a>
+      <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-links" id="nav-links">
+        <a href="index.html#products">Products</a>
+        <a href="generator.html" aria-current="page">Generator</a>
+        <a href="about.html">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="generator-intro">
+      <p class="eyebrow">The Generator</p>
+      <h1>Make a pattern that could only be yours.</h1>
+      <p class="lede">Every stroke is traced from the letters of your name. Change a detail and the whole design changes with it.</p>
+    </section>
+
+    <div class="generator-layout">
+
+      <!-- ===== Left: input panel ===== -->
+      <aside class="panel" aria-label="Design controls">
+
+        <fieldset class="panel-section">
+          <legend class="panel-label">Occasion</legend>
+          <div class="occasion-grid" role="radiogroup" aria-label="Occasion">
+            <button type="button" class="occasion-btn is-active" data-occasion="wedding" role="radio" aria-checked="true">
+              <span class="occasion-emoji" aria-hidden="true">💍</span> Wedding
+            </button>
+            <button type="button" class="occasion-btn" data-occasion="birthday" role="radio" aria-checked="false">
+              <span class="occasion-emoji" aria-hidden="true">🎂</span> Birthday
+            </button>
+            <button type="button" class="occasion-btn" data-occasion="marathon" role="radio" aria-checked="false">
+              <span class="occasion-emoji" aria-hidden="true">🏃</span> Marathon
+            </button>
+            <button type="button" class="occasion-btn" data-occasion="match" role="radio" aria-checked="false">
+              <span class="occasion-emoji" aria-hidden="true">🏐</span> Match / GAA
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset class="panel-section">
+          <legend class="panel-label">Your Details</legend>
+          <label class="field">
+            <span class="field-label">Name</span>
+            <input type="text" id="input-name" maxlength="30" placeholder="e.g. Aoife &amp; Ciarán" value="Aoife" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="field-label">Date</span>
+            <input type="text" id="input-date" maxlength="20" placeholder="e.g. 12.06.2027" value="12.06.2027" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="field-label">Place</span>
+            <input type="text" id="input-place" maxlength="24" placeholder="e.g. Dundalk" value="Dundalk" autocomplete="off">
+          </label>
+        </fieldset>
+
+        <fieldset class="panel-section">
+          <legend class="panel-label">Design Variation</legend>
+          <div class="seed-row">
+            <input type="range" id="input-seed" min="1" max="99" value="1" aria-describedby="seed-hint">
+            <output class="seed-value" id="seed-value" for="input-seed">#01</output>
+          </div>
+          <p class="hint" id="seed-hint">Drag to explore different arrangements for the same name.</p>
+        </fieldset>
+
+        <div class="panel-section panel-actions">
+          <button type="button" class="btn btn-primary" id="btn-compare">Compare 4 Variations</button>
+          <button type="button" class="btn btn-secondary" id="btn-shuffle">Shuffle ↺</button>
+        </div>
+
+        <div class="panel-section order-box">
+          <span class="panel-label">Your Order Code</span>
+          <div class="order-code-row">
+            <code class="order-code" id="order-code">INK-WE-AOIFE-12062027-DUN-01</code>
+            <button type="button" class="btn btn-small" id="btn-copy">Copy</button>
+          </div>
+          <p class="hint">Share this code when ordering — we'll reproduce your exact design.</p>
+        </div>
+
+        <div class="panel-section export-row">
+          <button type="button" class="btn btn-secondary" id="btn-png">↓ PNG (300 DPI)</button>
+          <button type="button" class="btn btn-secondary" id="btn-svg">↓ SVG</button>
+        </div>
+      </aside>
+
+      <!-- ===== Right: canvas ===== -->
+      <section class="canvas-area" aria-label="Pattern preview">
+        <div class="canvas-frame" id="single-view">
+          <div id="canvas-container" class="canvas-container"></div>
+          <p class="preview-label" id="preview-label">Aoife · 12.06.2027 · Dundalk</p>
+        </div>
+
+        <div class="compare-view" id="compare-view" hidden>
+          <div class="compare-head">
+            <p class="panel-label">Pick your favourite</p>
+            <button type="button" class="btn btn-small" id="btn-compare-close">Back ✕</button>
+          </div>
+          <div class="compare-grid" id="compare-grid"></div>
+          <p class="hint">Tap a variation to choose it — it becomes your design.</p>
+        </div>
+
+        <p class="toast" id="toast" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <p class="wordmark">inky · 印纪</p>
+        <p class="footer-tagline">Every design, generated once.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="index.html#products">Products</a>
+        <a href="generator.html">Generator</a>
+        <a href="about.html">About</a>
+      </nav>
+      <div class="footer-contact">
+        <p>Dundalk, Ireland</p>
+        <p>hello@inky.ie</p>
+      </div>
+    </div>
+    <p class="footer-copy">© 2026 inky</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script src="js/patterns.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/generator.js"></script>
+</body>
+</html>
