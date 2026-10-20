@@ -15,7 +15,7 @@
   <!-- ===== Navigation ===== -->
   <header class="nav">
     <div class="nav-inner">
-      <a class="wordmark" href="index.html">inky <span class="wordmark-dot">·</span> 印纪</a>
+      <a class="wordmark" href="index.html">inky · 印纪</a>
       <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
         <span></span><span></span><span></span>
       </button>
@@ -29,52 +29,58 @@
 
   <main>
     <section class="generator-intro">
-      <p class="eyebrow">The Generator</p>
-      <h1>Make a pattern that could only be yours.</h1>
-      <p class="lede">Every stroke is traced from the letters of your name. Change a detail and the whole design changes with it.</p>
+      <p class="label">the generator</p>
+      <h1>Your name becomes the pattern.</h1>
+      <p class="lede">Type your name and watch it turn into brushstrokes. Change one detail and the whole pattern changes with it.</p>
     </section>
 
     <div class="generator-layout">
 
       <!-- ===== Left: input panel ===== -->
-      <aside class="panel" aria-label="Design controls">
+      <aside class="panel card" aria-label="Design controls">
 
         <fieldset class="panel-section">
-          <legend class="panel-label">Occasion</legend>
+          <legend class="label">occasion</legend>
           <div class="occasion-grid" role="radiogroup" aria-label="Occasion">
             <button type="button" class="occasion-btn is-active" data-occasion="wedding" role="radio" aria-checked="true">
-              <span class="occasion-emoji" aria-hidden="true">💍</span> Wedding
+              <span class="occasion-name"><span aria-hidden="true">💍</span> Wedding</span>
+              <span class="occasion-tagline">drawn from the laurel — love that endures</span>
             </button>
             <button type="button" class="occasion-btn" data-occasion="birthday" role="radio" aria-checked="false">
-              <span class="occasion-emoji" aria-hidden="true">🎂</span> Birthday
+              <span class="occasion-name"><span aria-hidden="true">🎂</span> Birthday</span>
+              <span class="occasion-tagline">drawn from the flower — the joy of becoming</span>
             </button>
             <button type="button" class="occasion-btn" data-occasion="marathon" role="radio" aria-checked="false">
-              <span class="occasion-emoji" aria-hidden="true">🏃</span> Marathon
+              <span class="occasion-name"><span aria-hidden="true">🏃</span> Marathon</span>
+              <span class="occasion-tagline">drawn from the crown — a finish line earned</span>
             </button>
             <button type="button" class="occasion-btn" data-occasion="match" role="radio" aria-checked="false">
-              <span class="occasion-emoji" aria-hidden="true">🏐</span> Match / GAA
+              <span class="occasion-name"><span aria-hidden="true">🏐</span> Match / GAA</span>
+              <span class="occasion-tagline">drawn from the stars — two sides, one moment</span>
             </button>
           </div>
+          <!-- The selected occasion's tagline, as a note on the design's symbolic language -->
+          <p class="occasion-note" id="occasion-note" aria-live="polite">drawn from the laurel — love that endures</p>
         </fieldset>
 
         <fieldset class="panel-section">
-          <legend class="panel-label">Your Details</legend>
+          <legend class="label">your details</legend>
           <label class="field">
-            <span class="field-label">Name</span>
+            <span class="label">name</span>
             <input type="text" id="input-name" maxlength="30" placeholder="e.g. Aoife &amp; Ciarán" value="Aoife" autocomplete="off">
           </label>
           <label class="field">
-            <span class="field-label">Date</span>
+            <span class="label">date</span>
             <input type="text" id="input-date" maxlength="20" placeholder="e.g. 12.06.2027" value="12.06.2027" autocomplete="off">
           </label>
           <label class="field">
-            <span class="field-label">Place</span>
+            <span class="label">place</span>
             <input type="text" id="input-place" maxlength="24" placeholder="e.g. Dundalk" value="Dundalk" autocomplete="off">
           </label>
         </fieldset>
 
         <fieldset class="panel-section">
-          <legend class="panel-label">Design Variation</legend>
+          <legend class="label">design variation</legend>
           <div class="seed-row">
             <input type="range" id="input-seed" min="1" max="99" value="1" aria-describedby="seed-hint">
             <output class="seed-value" id="seed-value" for="input-seed">#01</output>
@@ -88,7 +94,7 @@
         </div>
 
         <div class="panel-section order-box">
-          <span class="panel-label">Your Order Code</span>
+          <span class="label">your order code</span>
           <div class="order-code-row">
             <code class="order-code" id="order-code">INK-WE-AOIFE-12062027-DUN-01</code>
             <button type="button" class="btn btn-small" id="btn-copy">Copy</button>
@@ -111,7 +117,7 @@
 
         <div class="compare-view" id="compare-view" hidden>
           <div class="compare-head">
-            <p class="panel-label">Pick your favourite</p>
+            <p class="label">pick your favourite</p>
             <button type="button" class="btn btn-small" id="btn-compare-close">Back ✕</button>
           </div>
           <div class="compare-grid" id="compare-grid"></div>
@@ -136,8 +142,9 @@
         <a href="about.html">About</a>
       </nav>
       <div class="footer-contact">
-        <p>Dundalk, Ireland</p>
+        <p>Dundalk · Co. Louth · Ireland</p>
         <p>hello@inky.ie</p>
+        <p>@inky.ie</p>
       </div>
     </div>
     <p class="footer-copy">© 2026 inky</p>

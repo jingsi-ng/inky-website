@@ -95,6 +95,12 @@ function setOccasion(occasion) {
     const isActive = btn.dataset.occasion === occasion;
     btn.classList.toggle('is-active', isActive);
     btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+
+    // Repeat the chosen occasion's tagline under the grid
+    if (isActive) {
+      document.getElementById('occasion-note').textContent =
+        btn.querySelector('.occasion-tagline').textContent;
+    }
   });
 }
 

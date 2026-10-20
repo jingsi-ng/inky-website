@@ -45,8 +45,15 @@ transformation (the design's quiet backbone — never named on the site):
 | Marathon | crown, feather, wing | Atalanta; the victor's laurel crown |
 | Match / GAA | star, constellation, orbit | Castor & Pollux become Gemini |
 
-4–7 large motifs sit faintly under the brushstrokes, and 2–4 tiny ones appear as
+4–7 large motifs sit faintly under the brushstrokes (alpha 0.12–0.2 — raised from the
+original 0.04–0.09, which disappeared at preview size), and 2–4 tiny ones appear as
 foreground accents. The SVG export draws them with the same functions via a small
 "SVG pen" that mimics the p5 calls they use.
+
+## Colour note
+
+`--amber` (`#c2b280`) is only 1.8:1 on cream, so small amber text uses
+`--amber-text` (`#6e5e32` on cream, `#5f512b` on bone sections) to pass WCAG AA.
+The true amber is kept for decoration and on dark grounds (footer, dark mode).
 
 SVG exports contain live `<text>` — convert text to outlines before sending to the printer.

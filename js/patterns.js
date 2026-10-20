@@ -371,8 +371,10 @@ function addMotifUnderlay(elements, rng, palette, px) {
       // this sub-seed, so canvas and SVG draw the identical shape
       motifSeed: Math.floor(rng() * 4294967296),
       color: rngPick(rng, palette.brushColors),
-      alpha: rngRange(rng, 0.05, 0.09),
-      weight: px(1.6)
+      // Spec asked for 0.04–0.09; that all but vanished at preview size,
+      // so the underlay runs a little stronger while staying behind the strokes
+      alpha: rngRange(rng, 0.12, 0.2),
+      weight: px(1.8)
     });
   }
 }

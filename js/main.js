@@ -74,6 +74,7 @@ const HERO_NAME      = 'Aoife';
 const HERO_DATE      = '12.06.2027';
 const HERO_PLACE     = 'Dundalk';
 const HERO_OCCASIONS = ['wedding', 'birthday', 'marathon', 'match'];
+const HERO_SIZE      = 380;    // px, square
 const HERO_CYCLE_MS  = 4000;
 const HERO_DRAW_MS   = 2400;   // time for the strokes to draw in
 const HERO_FADE_MS   = 600;    // cross-fade from the previous palette
@@ -89,10 +90,10 @@ function setupHeroCanvas() {
     let cycleStart = 0;
     let previousFrame = null;   // p5.Graphics holding the last finished pattern
     let hasPrevious = false;    // nothing to fade from on the very first cycle
-    let size = 400;
+    let size = HERO_SIZE;
 
     function heroSize() {
-      return Math.min(400, holder.clientWidth || 400);
+      return Math.min(HERO_SIZE, holder.clientWidth || HERO_SIZE);
     }
 
     p.setup = function() {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About — inky · 印纪</title>
-  <meta name="description" content="The story behind inky, a small print studio in Dundalk making gifts from your name with algorithmic design.">
+  <meta name="description" content="A small print studio in Dundalk. How the generator works, the four occasions and their visual languages, and the Metamorphoses Collection coming in 2027.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -12,10 +12,91 @@
 </head>
 <body class="page-about">
 
+  <!-- Motif sprite: simple flat shapes, coloured by currentColor where used -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <!-- one almond leaf, 34 long, pointing right from its base at 0,0 -->
+      <path id="leaf-shape" d="M0 0 C 8 -10 26 -10 34 0 C 26 10 8 10 0 0 Z"/>
+    </defs>
+
+    <!-- 3-leaf branch (filled) -->
+    <symbol id="m-branch" viewBox="0 0 100 100">
+      <path d="M14 90 C 30 70 48 48 70 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <g fill="currentColor">
+        <use href="#leaf-shape" transform="translate(32 68) rotate(-150)"/>
+        <use href="#leaf-shape" transform="translate(48 48) rotate(-10)"/>
+        <use href="#leaf-shape" transform="translate(68 32) rotate(-50)"/>
+      </g>
+    </symbol>
+
+    <!-- 5-petal flower (filled) -->
+    <symbol id="m-flower" viewBox="0 0 100 100">
+      <g fill="currentColor" transform="translate(50 50)">
+        <ellipse cx="0" cy="-23" rx="11" ry="20"/>
+        <ellipse cx="0" cy="-23" rx="11" ry="20" transform="rotate(72)"/>
+        <ellipse cx="0" cy="-23" rx="11" ry="20" transform="rotate(144)"/>
+        <ellipse cx="0" cy="-23" rx="11" ry="20" transform="rotate(216)"/>
+        <ellipse cx="0" cy="-23" rx="11" ry="20" transform="rotate(288)"/>
+      </g>
+      <circle cx="50" cy="50" r="7" fill="none" stroke="currentColor" stroke-width="3"/>
+    </symbol>
+
+    <!-- crown arc: bottom half of a circle with upward spikes -->
+    <symbol id="m-crown" viewBox="0 0 100 100">
+      <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+        <path d="M14 46 A 36 36 0 0 0 86 46"/>
+        <line x1="18.8" y1="64" x2="18.8" y2="52"/>
+        <line x1="32" y1="77.2" x2="32" y2="61"/>
+        <line x1="50" y1="82" x2="50" y2="62"/>
+        <line x1="68" y1="77.2" x2="68" y2="61"/>
+        <line x1="81.2" y1="64" x2="81.2" y2="52"/>
+      </g>
+    </symbol>
+
+    <!-- 6-point star + two-dot constellation -->
+    <symbol id="m-star" viewBox="0 0 100 100">
+      <g stroke="currentColor" stroke-width="3.5" stroke-linecap="round">
+        <line x1="42" y1="42" x2="72" y2="42"/><line x1="42" y1="42" x2="57" y2="68"/>
+        <line x1="42" y1="42" x2="27" y2="68"/><line x1="42" y1="42" x2="12" y2="42"/>
+        <line x1="42" y1="42" x2="27" y2="16"/><line x1="42" y1="42" x2="57" y2="16"/>
+        <line x1="72" y1="78" x2="88" y2="62" stroke-width="1.6"/>
+      </g>
+      <g fill="currentColor">
+        <circle cx="72" cy="42" r="4"/><circle cx="57" cy="68" r="4"/><circle cx="27" cy="68" r="4"/>
+        <circle cx="12" cy="42" r="4"/><circle cx="27" cy="16" r="4"/><circle cx="57" cy="16" r="4"/>
+        <circle cx="72" cy="78" r="5"/><circle cx="88" cy="62" r="4"/>
+      </g>
+    </symbol>
+
+    <!-- laurel branch, line-art -->
+    <symbol id="m-laurel-line" viewBox="0 0 100 100">
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 92 C 22 64 34 38 62 12"/>
+        <use href="#leaf-shape" transform="translate(21 74) rotate(-160) scale(.8)"/>
+        <use href="#leaf-shape" transform="translate(23 70) rotate(-30) scale(.8)"/>
+        <use href="#leaf-shape" transform="translate(29 52) rotate(-170) scale(.75)"/>
+        <use href="#leaf-shape" transform="translate(32 48) rotate(-35) scale(.75)"/>
+        <use href="#leaf-shape" transform="translate(43 30) rotate(-175) scale(.7)"/>
+        <use href="#leaf-shape" transform="translate(46 27) rotate(-45) scale(.7)"/>
+        <use href="#leaf-shape" transform="translate(62 12) rotate(-40) scale(.6)"/>
+      </g>
+    </symbol>
+
+    <!-- constellation: 3 dots + connecting lines -->
+    <symbol id="m-constellation" viewBox="0 0 100 100">
+      <g stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <line x1="18" y1="72" x2="48" y2="26"/><line x1="48" y1="26" x2="82" y2="56"/>
+      </g>
+      <g fill="currentColor">
+        <circle cx="18" cy="72" r="6"/><circle cx="48" cy="26" r="8"/><circle cx="82" cy="56" r="6"/>
+      </g>
+    </symbol>
+  </svg>
+
   <!-- ===== Navigation ===== -->
   <header class="nav">
     <div class="nav-inner">
-      <a class="wordmark" href="index.html">inky <span class="wordmark-dot">·</span> 印纪</a>
+      <a class="wordmark" href="index.html">inky · 印纪</a>
       <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
         <span></span><span></span><span></span>
       </button>
@@ -28,131 +109,182 @@
   </header>
 
   <main>
-    <section class="page-hero">
-      <div class="section-inner narrow">
-        <p class="eyebrow">About inky · 印纪</p>
-        <h1>A gift made <em>from</em> you, not just for you.</h1>
-      </div>
-    </section>
-
-    <!-- ===== Our Story ===== -->
+    <!-- ===== 1. What we believe ===== -->
     <section class="section">
-      <div class="section-inner narrow">
-        <div class="about-block reveal">
-          <p class="block-label">01 — Our Story</p>
-          <p class="story-text">inky started with a question: what if a gift could be made from you, not just for you? We're a small studio in Dundalk, Ireland — a designer, a maker, and a dreamer — using algorithmic design and a UV+DTF printer to make things that last.</p>
-          <p>Every pattern begins as a name. The letters dissolve into lines, the lines become composition, the composition becomes an object you can hold. Something of you — your name, your date, your place — stays inside it permanently. That's what we make.</p>
-          <p class="aside-note">The name says it twice: <em>inky</em> for the ink, and <span lang="zh">印纪</span> — <em>yìn jì</em> — “a printed record”.</p>
+      <div class="section-inner">
+        <p class="label">what we believe</p>
+        <h1 class="belief-title">Something of you stays inside it.</h1>
+
+        <div class="two-col">
+          <p>inky started with a question: what if a gift could be made from you, not just for you? We're a small studio in Dundalk, Ireland — a designer, a maker, and a dreamer — using algorithmic design and a UV+DTF printer to make things that last.</p>
+          <p>Every pattern begins as a name. The letters dissolve into lines, the lines become a composition, the composition becomes an object you can hold. Something of you — your name, your date, your place — is fixed inside it permanently. That's what we make.</p>
         </div>
+
+        <ol class="flow reveal" aria-label="How a name becomes an object">
+          <li class="flow-box">A name</li>
+          <li class="flow-arrow" aria-hidden="true"><span class="arrow-h">→</span><span class="arrow-v">↓</span></li>
+          <li class="flow-box">becomes a pattern</li>
+          <li class="flow-arrow" aria-hidden="true"><span class="arrow-h">→</span><span class="arrow-v">↓</span></li>
+          <li class="flow-box">becomes an object</li>
+        </ol>
       </div>
     </section>
 
-    <!-- ===== How the Generator Works ===== -->
-    <section class="section section--alt">
-      <div class="section-inner narrow">
-        <div class="about-block reveal">
-          <p class="block-label">02 — How the Generator Works</p>
-          <h2>Deterministic, not random.</h2>
-          <p>Our generator looks random, but it isn't. Behind every design is a simple promise: <strong>the same details always make the same pattern.</strong></p>
-        </div>
+    <!-- ===== 2. How the generator works ===== -->
+    <section class="section section--ink">
+      <div class="section-inner">
+        <p class="label">the generator</p>
+        <h2>How your design is made</h2>
 
-        <div class="explain-grid">
-          <div class="explain-card reveal">
-            <span class="step-number">A</span>
-            <h3>Your name is the seed</h3>
-            <p>Your name, date, place and occasion are turned into a single number. That number decides where every brushstroke lands — so “Aoife” in wedding colours is always the same “Aoife”.</p>
-          </div>
-          <div class="explain-card reveal">
-            <span class="step-number">B</span>
-            <h3>Letters become strokes</h3>
-            <p>Each letter has a hand-drawn skeleton. The generator lays short, tapered brush marks along it, while faint symbols for your occasion — laurel for weddings, blossoms for birthdays, feathers for the finish line, stars for the team — rest underneath.</p>
-          </div>
-          <div class="explain-card reveal">
-            <span class="step-number">C</span>
-            <h3>The seed lets you explore</h3>
-            <p>The variation slider (1–99) nudges the arrangement without changing who it belongs to. Ninety-nine takes on the same name — pick the one that feels like you.</p>
-          </div>
-          <div class="explain-card reveal">
-            <span class="step-number">D</span>
-            <h3>The code locks it in</h3>
-            <p>Your order code — like <code>INK-WE-AOIFE-12062027-DUN-01</code> — carries every detail. Send it to us and we regenerate your exact design at print resolution.</p>
-          </div>
-        </div>
+        <ol class="make-grid">
+          <li class="make-step reveal">
+            <span class="step-number">01</span>
+            <h3>Enter your details</h3>
+            <p>Your name, date, and place become the seed for everything.</p>
+          </li>
+          <li class="make-step reveal">
+            <span class="step-number">02</span>
+            <h3>The algorithm runs</h3>
+            <p>Your letters are traced as brushstroke skeletons. Every stroke placement is calculated from your name — no two names produce the same composition.</p>
+          </li>
+          <li class="make-step reveal">
+            <span class="step-number">03</span>
+            <h3>Choose your variation</h3>
+            <p>The seed slider lets you explore 99 different arrangements of the same pattern. Same name, different rhythm.</p>
+          </li>
+          <li class="make-step reveal">
+            <span class="step-number">04</span>
+            <h3>Lock it with a code</h3>
+            <p>Your order code encodes your exact design. Share it with us and we reproduce it precisely, every time.</p>
+          </li>
+        </ol>
       </div>
     </section>
 
-    <!-- ===== Coming Soon: Metamorphoses ===== -->
+    <!-- ===== 3. The occasion system ===== -->
     <section class="section">
-      <div class="section-inner narrow">
-        <p class="block-label reveal">03 — Coming Soon</p>
-        <article class="teaser-card reveal">
-          <svg class="teaser-art" viewBox="0 0 240 240" aria-hidden="true">
-            <!-- laurel sprig curving up the left -->
-            <path d="M52 206 C 40 160, 46 110, 82 64" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            <g fill="currentColor" fill-opacity=".55">
-              <path d="M47 184 q -20 -6 -24 -22 q 18 2 24 22 z"/>
-              <path d="M48 180 q 14 -12 30 -8 q -12 14 -30 8 z"/>
-              <path d="M45 150 q -20 -8 -22 -24 q 18 4 22 24 z"/>
-              <path d="M47 146 q 14 -14 30 -10 q -12 14 -30 10 z"/>
-              <path d="M54 116 q -18 -10 -18 -26 q 16 6 18 26 z"/>
-              <path d="M57 112 q 16 -12 30 -6 q -14 12 -30 6 z"/>
-              <path d="M70 82 q -12 -14 -8 -28 q 12 10 8 28 z"/>
-              <path d="M82 64 q 6 -16 20 -20 q -4 16 -20 20 z"/>
-            </g>
-            <!-- constellation across the top right -->
-            <g stroke="currentColor" stroke-width=".9" stroke-opacity=".7">
-              <line x1="128" y1="58" x2="158" y2="40"/>
-              <line x1="158" y1="40" x2="190" y2="62"/>
-              <line x1="190" y1="62" x2="206" y2="100"/>
-              <line x1="190" y1="62" x2="168" y2="96"/>
-            </g>
-            <g fill="currentColor">
-              <circle cx="128" cy="58" r="3"/><circle cx="158" cy="40" r="4"/>
-              <circle cx="190" cy="62" r="3"/><circle cx="206" cy="100" r="3.5"/>
-              <circle cx="168" cy="96" r="2.5"/>
-            </g>
-            <!-- small asterisk star -->
-            <g stroke="currentColor" stroke-width="1.2" stroke-linecap="round" transform="translate(150 170)">
-              <line x1="0" y1="-14" x2="0" y2="14"/><line x1="-12" y1="-7" x2="12" y2="7"/><line x1="-12" y1="7" x2="12" y2="-7"/>
-            </g>
-            <circle cx="150" cy="170" r="30" fill="none" stroke="currentColor" stroke-width=".8" stroke-dasharray="2 5"/>
-          </svg>
-          <div class="teaser-body">
-            <p class="teaser-tag">Limited edition · 2027</p>
-            <h2>The Metamorphoses Collection</h2>
-            <p>A limited edition series where each design draws from a story of transformation — ancient tales redrawn as generative patterns. Launching 2027.</p>
-          </div>
-        </article>
-      </div>
-    </section>
+      <div class="section-inner">
+        <header class="section-head">
+          <p class="label">the occasions</p>
+          <h2>Four occasions. Four visual languages.</h2>
+        </header>
 
-    <!-- ===== What We Print On ===== -->
-    <section class="section section--alt">
-      <div class="section-inner narrow">
-        <div class="about-block reveal">
-          <p class="block-label">04 — What We Print On</p>
-          <ul class="print-list">
-            <li><span>Tote Bags</span><span class="print-meta">Screen-printed · €18–28</span></li>
-            <li><span>Acrylic Keychains</span><span class="print-meta">UV-printed · €8–14</span></li>
-            <li><span>Coasters</span><span class="print-meta">Set of 4 · €22–35</span></li>
-            <li><span>Event Packages</span><span class="print-meta">Marathons, societies &amp; clubs · Get a quote</span></li>
-          </ul>
+        <div class="occasion-cards">
+          <article class="occasion-card card reveal" style="--strip:#f5ede0; --strip-deep:#d4bc9c; --motif:#8c4a2a;">
+            <div class="occasion-strip" aria-hidden="true"></div>
+            <div class="occasion-card-body">
+              <span class="occasion-icon" aria-hidden="true">💍</span>
+              <h3>Wedding</h3>
+              <p class="label">Drawn from the laurel — love that endures transformation</p>
+              <ul class="swatches" aria-label="Wedding palette">
+                <li style="--swatch:#c2a888"></li><li style="--swatch:#8c6040"></li><li style="--swatch:#c8b090"></li>
+              </ul>
+            </div>
+            <svg class="card-motif" aria-hidden="true"><use href="#m-branch"/></svg>
+          </article>
+
+          <article class="occasion-card card reveal" style="--strip:#edf0e6; --strip-deep:#a8c890; --motif:#3a5818;">
+            <div class="occasion-strip" aria-hidden="true"></div>
+            <div class="occasion-card-body">
+              <span class="occasion-icon" aria-hidden="true">🎂</span>
+              <h3>Birthday</h3>
+              <p class="label">Drawn from the narcissus — new beginnings, the joy of becoming</p>
+              <ul class="swatches" aria-label="Birthday palette">
+                <li style="--swatch:#88a870"></li><li style="--swatch:#4a6828"></li><li style="--swatch:#a8c890"></li>
+              </ul>
+            </div>
+            <svg class="card-motif" aria-hidden="true"><use href="#m-flower"/></svg>
+          </article>
+
+          <article class="occasion-card card reveal" style="--strip:#f0e8e0; --strip-deep:#d0a888; --motif:#6a3820;">
+            <div class="occasion-strip" aria-hidden="true"></div>
+            <div class="occasion-card-body">
+              <span class="occasion-icon" aria-hidden="true">🏃</span>
+              <h3>Marathon / Run</h3>
+              <p class="label">Drawn from the laurel crown — the shape of a finish line earned</p>
+              <ul class="swatches" aria-label="Marathon palette">
+                <li style="--swatch:#b89078"></li><li style="--swatch:#7a4830"></li><li style="--swatch:#d0a888"></li>
+              </ul>
+            </div>
+            <svg class="card-motif" aria-hidden="true"><use href="#m-crown"/></svg>
+          </article>
+
+          <article class="occasion-card card reveal" style="--strip:#e8eaf0; --strip-deep:#a0b0d0; --motif:#2a3860;">
+            <div class="occasion-strip" aria-hidden="true"></div>
+            <div class="occasion-card-body">
+              <span class="occasion-icon" aria-hidden="true">🏐</span>
+              <h3>Match / Event</h3>
+              <p class="label">Drawn from the twin stars — two sides, one moment, always remembered</p>
+              <ul class="swatches" aria-label="Match palette">
+                <li style="--swatch:#8090b8"></li><li style="--swatch:#304870"></li><li style="--swatch:#a0b0d0"></li>
+              </ul>
+            </div>
+            <svg class="card-motif" aria-hidden="true"><use href="#m-star"/></svg>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- ===== Contact ===== -->
+    <!-- ===== 4. Metamorphoses collection ===== -->
+    <section class="section section--bone collection">
+      <div class="section-inner">
+        <p class="eyebrow-big">COMING 2027</p>
+        <h2>The Metamorphoses Collection</h2>
+        <p class="collection-intro">A limited edition series where each design draws from an ancient story of transformation. Four tales. Four pattern systems. Printed on objects meant to last.</p>
+
+        <div class="series-row" tabindex="0" aria-label="The four series">
+          <article class="series-card reveal" style="--series-bg:#f5ede0;">
+            <p class="label">WEDDING · LAUREL</p>
+            <h3>Daphne</h3>
+            <p>She became the laurel to remain herself. Your names become the pattern.</p>
+            <svg class="series-motif" aria-hidden="true"><use href="#m-laurel-line"/></svg>
+            <span class="series-badge">Coming 2027</span>
+          </article>
+
+          <article class="series-card reveal" style="--series-bg:#edf0e6;">
+            <p class="label">BIRTHDAY · BLOOM</p>
+            <h3>Narcissus</h3>
+            <p>The flower that grew where he stood. Your moment becomes the bloom.</p>
+            <svg class="series-motif" aria-hidden="true"><use href="#m-flower"/></svg>
+            <span class="series-badge">Coming 2027</span>
+          </article>
+
+          <article class="series-card reveal" style="--series-bg:#f0e8e0;">
+            <p class="label">MARATHON · CROWN</p>
+            <h3>Atalanta</h3>
+            <p>The fastest. The untamed. Your finish line, drawn in laurel.</p>
+            <svg class="series-motif" aria-hidden="true"><use href="#m-crown"/></svg>
+            <span class="series-badge">Coming 2027</span>
+          </article>
+
+          <article class="series-card reveal" style="--series-bg:#e8eaf0;">
+            <p class="label">MATCH · STARS</p>
+            <h3>Gemini</h3>
+            <p>Two brothers. One constellation. Your team, fixed in the sky.</p>
+            <svg class="series-motif" aria-hidden="true"><use href="#m-constellation"/></svg>
+            <span class="series-badge">Coming 2027</span>
+          </article>
+        </div>
+
+        <p class="collection-cta">Want to be first to know? Email us at hello@inky.ie</p>
+      </div>
+    </section>
+
+    <!-- ===== 5. Contact ===== -->
     <section class="section" id="contact">
       <div class="section-inner narrow">
-        <div class="about-block reveal">
-          <p class="block-label">05 — Contact</p>
-          <h2>Say hello — and bring your code.</h2>
+        <p class="label">get in touch</p>
+        <h2>Say hello.</h2>
+        <div class="two-col">
           <dl class="contact-list">
-            <div><dt>Email</dt><dd>hello@inky.ie</dd></div>
-            <div><dt>Instagram</dt><dd>@inky.ie</dd></div>
-            <div><dt>Location</dt><dd>Dundalk, Co. Louth, Ireland</dd></div>
+            <div><dt class="label">email</dt><dd>hello@inky.ie</dd></div>
+            <div><dt class="label">instagram</dt><dd>@inky.ie</dd></div>
+            <div><dt class="label">studio</dt><dd>Dundalk, Co. Louth, Ireland</dd></div>
           </dl>
-          <a class="btn btn-primary" href="generator.html">Create Your Design →</a>
+          <div class="contact-note">
+            <p>We're a small team. We reply to every message personally. Orders are taken by email — use your order code from the generator and tell us what you'd like printed on.</p>
+            <a class="btn btn-primary" href="generator.html">Create Your Design →</a>
+          </div>
         </div>
       </div>
     </section>
@@ -171,8 +303,9 @@
         <a href="about.html">About</a>
       </nav>
       <div class="footer-contact">
-        <p>Dundalk, Ireland</p>
+        <p>Dundalk · Co. Louth · Ireland</p>
         <p>hello@inky.ie</p>
+        <p>@inky.ie</p>
       </div>
     </div>
     <p class="footer-copy">© 2026 inky</p>

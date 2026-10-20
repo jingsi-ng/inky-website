@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>inky · 印纪 — Personalised prints, generated once</title>
-  <meta name="description" content="inky is a small print studio in Dundalk, Ireland. We turn your name, date and occasion into a one-of-a-kind brushstroke pattern — then print it on totes, keychains and coasters.">
+  <title>inky · 印纪 — Personalised print, Dundalk</title>
+  <meta name="description" content="A small print studio in Dundalk. Your name becomes the pattern. We print the pattern. You keep it — on totes, keychains and coasters.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
   <!-- ===== Navigation ===== -->
   <header class="nav">
     <div class="nav-inner">
-      <a class="wordmark" href="index.html">inky <span class="wordmark-dot">·</span> 印纪</a>
+      <a class="wordmark" href="index.html">inky · 印纪</a>
       <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
         <span></span><span></span><span></span>
       </button>
@@ -32,90 +32,66 @@
     <section class="hero">
       <div class="hero-inner">
         <div class="hero-copy">
-          <p class="eyebrow">Personalised print · Dundalk, Ireland</p>
-          <h1 class="hero-title">Your name.<br>Transformed. Permanent.</h1>
-          <p class="hero-sub">From weddings to marathons — every pattern begins as a name and becomes something you keep.</p>
+          <p class="label">Dundalk, Ireland — personalised print</p>
+          <h1 class="hero-title">Your name.<br>Transformed.<br>Permanent.</h1>
+          <p class="hero-sub">Every pattern begins as a name. The letters become composition. The composition becomes an object you keep.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary btn-large" href="generator.html">Create Your Design →</a>
-            <a class="text-link" href="#how">How it works</a>
+            <a class="btn btn-primary" href="generator.html">Create Your Design →</a>
+            <a class="soft-link" href="#how">See how it works ↓</a>
           </div>
         </div>
         <figure class="hero-art">
-          <div id="hero-canvas" class="hero-canvas" aria-label="Animated example: the name Aoife drawn as brushstrokes in four occasion palettes" role="img"></div>
-          <figcaption class="hero-caption">“Aoife” · four occasions · one name</figcaption>
+          <div id="hero-canvas" class="hero-canvas" role="img" aria-label="Animated example: the name Aoife drawn as brushstrokes, cycling through the four occasion palettes"></div>
+          <figcaption class="label">live preview — enter your own name in the generator</figcaption>
         </figure>
       </div>
     </section>
 
     <!-- ===== Products ===== -->
-    <section class="section" id="products">
+    <section class="section ruled" id="products">
       <div class="section-inner">
         <header class="section-head reveal">
-          <p class="eyebrow">What we print on</p>
-          <h2>Made for keeping, and for giving.</h2>
+          <p class="label">what we print</p>
+          <h2>Things that last.</h2>
         </header>
 
         <div class="product-grid">
-          <article class="product-card reveal">
-            <div class="product-visual product-visual--tote" aria-hidden="true">
-              <svg viewBox="0 0 120 120" class="product-icon">
-                <path d="M42 44 C42 26 78 26 78 44" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                <path d="M30 44 H90 L86 98 H34 Z" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
-                <path d="M44 62 l10 14 M58 58 l-6 22 M64 66 l14 6 M70 80 l8 -12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-              </svg>
-            </div>
+          <article class="product-card card reveal">
+            <div class="product-strip" style="--strip: #e6d7bd;" aria-hidden="true"></div>
             <div class="product-body">
+              <span class="label">01</span>
               <h3>Tote Bag</h3>
-              <p class="product-desc">Screen-printed with your generated pattern</p>
-              <p class="product-price">€18–28</p>
+              <p class="product-desc">Your generated pattern, screen-printed. Reusable, sturdy, yours.</p>
+              <p class="product-price">€18 – 28</p>
             </div>
           </article>
 
-          <article class="product-card reveal">
-            <div class="product-visual product-visual--keychain" aria-hidden="true">
-              <svg viewBox="0 0 120 120" class="product-icon">
-                <circle cx="60" cy="28" r="9" fill="none" stroke="currentColor" stroke-width="3"/>
-                <path d="M60 37 V46" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                <rect x="36" y="46" width="48" height="54" rx="12" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="3"/>
-                <path d="M48 64 l8 18 M58 60 l10 22 M52 74 h20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-              </svg>
-            </div>
+          <article class="product-card card reveal">
+            <div class="product-strip" style="--strip: #b87050;" aria-hidden="true"></div>
             <div class="product-body">
+              <span class="label">02</span>
               <h3>Acrylic Keychain</h3>
-              <p class="product-desc">UV-printed, your name in brushstroke form</p>
-              <p class="product-price">€8–14</p>
+              <p class="product-desc">Your name drawn as brushstrokes, UV-printed on 3mm acrylic.</p>
+              <p class="product-price">€8 – 14</p>
             </div>
           </article>
 
-          <article class="product-card reveal">
-            <div class="product-visual product-visual--coaster" aria-hidden="true">
-              <svg viewBox="0 0 120 120" class="product-icon">
-                <circle cx="44" cy="46" r="22" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="3"/>
-                <circle cx="76" cy="46" r="22" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="3"/>
-                <circle cx="44" cy="78" r="22" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="3"/>
-                <circle cx="76" cy="78" r="22" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="3"/>
-                <path d="M38 42 l10 8 M70 40 l12 10 M40 76 l8 -6 M72 80 l10 -4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-              </svg>
-            </div>
+          <article class="product-card card reveal">
+            <div class="product-strip" style="--strip: #9fb39a;" aria-hidden="true"></div>
             <div class="product-body">
+              <span class="label">03</span>
               <h3>Coaster Set</h3>
-              <p class="product-desc">Set of 4, each uniquely generated</p>
-              <p class="product-price">€22–35</p>
+              <p class="product-desc">Four coasters. Four patterns generated from the same name.</p>
+              <p class="product-price">€22 – 35</p>
             </div>
           </article>
 
-          <article class="product-card reveal">
-            <div class="product-visual product-visual--event" aria-hidden="true">
-              <svg viewBox="0 0 120 120" class="product-icon">
-                <path d="M46 22 L60 48 L74 22" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
-                <circle cx="60" cy="72" r="26" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="3"/>
-                <circle cx="60" cy="72" r="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 4"/>
-                <path d="M52 72 l6 6 l12 -14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
+          <article class="product-card card reveal">
+            <div class="product-strip" style="--strip: #d0a888;" aria-hidden="true"></div>
             <div class="product-body">
+              <span class="label">04</span>
               <h3>Event Package</h3>
-              <p class="product-desc">Custom merchandise for marathons, societies &amp; events</p>
+              <p class="product-desc">Custom merchandise for marathons, societies and clubs.</p>
               <p class="product-price">Get a quote</p>
             </div>
           </article>
@@ -124,34 +100,30 @@
     </section>
 
     <!-- ===== How it works ===== -->
-    <section class="section section--alt" id="how">
+    <section class="section section--bone" id="how">
       <div class="section-inner">
         <header class="section-head reveal">
-          <p class="eyebrow">How it works</p>
-          <h2>Three steps from your name to your print.</h2>
+          <p class="label">the process</p>
+          <h2>How your design is made.</h2>
         </header>
 
         <ol class="steps">
           <li class="step reveal">
             <span class="step-number">01</span>
-            <h3>Tell us your moment</h3>
-            <p>Enter your name, date and occasion — a wedding, a birthday, a finish line or a county final.</p>
+            <h3>Enter your details</h3>
+            <p>Name, date, place, occasion — these become the seed for everything.</p>
           </li>
           <li class="step reveal">
             <span class="step-number">02</span>
-            <h3>Watch it generate</h3>
-            <p>Your pattern is drawn stroke by stroke from the letters you typed. Slide through variations until one feels right.</p>
+            <h3>The pattern generates</h3>
+            <p>Your letters are traced as brushstroke skeletons. No two names look the same.</p>
           </li>
           <li class="step reveal">
             <span class="step-number">03</span>
-            <h3>Save your order code</h3>
-            <p>Copy the code, send it to us, and we'll reproduce your exact design on the product you choose.</p>
+            <h3>Lock it with a code</h3>
+            <p>Copy your order code. Send it to us. We reproduce your exact design.</p>
           </li>
         </ol>
-
-        <div class="section-cta reveal">
-          <a class="btn btn-primary" href="generator.html">Try the Generator →</a>
-        </div>
       </div>
     </section>
 
@@ -161,7 +133,7 @@
         <blockquote>
           <p>“Names become patterns. Moments become objects. You become permanent.”</p>
         </blockquote>
-        <figcaption class="quote-caption">— the idea behind every inky design</figcaption>
+        <figcaption class="label">— the idea behind every inky design</figcaption>
       </figure>
     </section>
   </main>
@@ -179,8 +151,9 @@
         <a href="about.html">About</a>
       </nav>
       <div class="footer-contact">
-        <p>Dundalk, Ireland</p>
+        <p>Dundalk · Co. Louth · Ireland</p>
         <p>hello@inky.ie</p>
+        <p>@inky.ie</p>
       </div>
     </div>
     <p class="footer-copy">© 2026 inky</p>
