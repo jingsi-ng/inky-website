@@ -33,6 +33,15 @@ the identical design at any size — 200px previews, the 560px canvas, or the
 2400×2400px (300 DPI @ 8in) print export. The order code
 (e.g. `INK-WE-AOIFE-12062027-DUN-01`) carries all the inputs, so no backend is needed.
 
+## Generator page behaviour
+
+- Opens empty: the canvas shows a demo pattern for “inky” (wedding, #01) with a
+  small overlay that disappears on the first keystroke in the name field.
+- Order code + export stay hidden until the name has 2+ letters, then stay visible.
+- Desktop (>1024px): 320px controls panel (scrolls on its own) beside a sticky canvas.
+- Tablet / phone: one column — occasion → canvas → details → slider → actions →
+  code → export. Canvas max 500px on tablet, 400px (screen − 32px) on phone.
+
 ## Occasion motifs
 
 Each occasion palette carries a set of symbolic shapes drawn from stories of

@@ -7,9 +7,11 @@
    ========================================================================== */
 
 // ----- Current design state -----
-let currentName    = 'Aoife';
-let currentDate    = '12.06.2027';
-let currentPlace   = 'Dundalk';
+// The page opens empty: until a name is typed, the canvas shows a demo
+// pattern for DEMO_NAME so it is never blank.
+let currentName    = '';
+let currentDate    = '';
+let currentPlace   = '';
 let currentOcc     = 'wedding';
 let currentSeed    = 1;
 let isCompareMode  = false;
@@ -20,6 +22,10 @@ let compareGraphics = [];      // four p5.Graphics reused for Compare mode
 const REDRAW_DELAY_MS = 350;   // debounce for text inputs
 const COMPARE_SIZE    = 200;   // px, each Compare canvas
 const HI_RES          = 2400;  // px, 300 DPI × 8 inches
+const DEMO_NAME       = 'inky';
+const MIN_NAME_LENGTH = 2;     // letters needed before the order code appears
+
+let hasTypedName = false;      // overlay hides on the first keystroke, for good
 
 /* --------------------------------------------------------------------------
    p5 sketch (instance mode so it doesn't pollute global scope)
@@ -34,7 +40,7 @@ const sketch = function(p) {
   };
 
   p.draw = function() {
-    paintPattern(p, p.width, currentName, currentDate, currentPlace, currentOcc, currentSeed);
+    paintPattern(p, p.width, patternName(), currentDate, currentPlace, currentOcc, currentSeed);
   };
 
   p.windowResized = function() {
@@ -48,11 +54,24 @@ const sketch = function(p) {
 
 mainSketch = new p5(sketch);
 
-// Largest square that fits the column and the screen height
+// The name actually drawn: the visitor's, or the demo name while empty
+function patternName() {
+  return currentName.trim() ? currentName : DEMO_NAME;
+}
+
+// Biggest canvas allowed at each screen width (matches the CSS breakpoints)
+function maxCanvasSize() {
+  if (window.innerWidth < 768) return 400;    // phone
+  if (window.innerWidth <= 1024) return 500;  // tablet
+  return 560;                                 // desktop
+}
+
+// Largest square that fits the column (and, on desktop, the screen height)
 function getCanvasSize() {
   const container = document.getElementById('canvas-container');
-  const available = container ? Math.min(container.clientWidth, window.innerHeight - 150) : 500;
-  return Math.max(Math.min(available, 560), 280);
+  let available = container ? container.clientWidth : 500;
+  if (window.innerWidth > 1024) available = Math.min(available, window.innerHeight - 150);
+  return Math.max(Math.min(available, maxCanvasSize()), 280);
 }
 
 /* --------------------------------------------------------------------------
@@ -74,13 +93,32 @@ function scheduleRedraw() {
 
 function updateOrderCode() {
   document.getElementById('order-code').textContent =
-    generateOrderCode(currentName, currentDate, currentPlace, currentOcc, currentSeed);
+    generateOrderCode(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
 }
 
 function updatePreviewLabel() {
+  const label = document.getElementById('preview-label');
+  if (!currentName.trim()) {
+    label.textContent = DEMO_NAME + ' · sample pattern';
+    return;
+  }
   const parts = [currentName.trim(), currentDate.trim(), currentPlace.trim()]
     .filter(function(part) { return part.length > 0; });
-  document.getElementById('preview-label').textContent = parts.join(' · ') || 'Type a name to begin';
+  label.textContent = parts.join(' · ');
+}
+
+// First keystroke in the name field: drop the "enter your name" overlay.
+// Once the name has 2+ letters, show the order code + export for good.
+function updateNameDependentUi() {
+  if (!hasTypedName) {
+    hasTypedName = true;
+    document.getElementById('canvas-overlay').classList.add('is-hidden');
+  }
+  if (currentName.trim().length >= MIN_NAME_LENGTH) {
+    document.querySelectorAll('[data-needs-name]').forEach(function(section) {
+      section.classList.add('is-shown');
+    });
+  }
 }
 
 function setSeed(seed) {
@@ -173,7 +211,7 @@ function renderCompareGrid() {
 
   compareGraphics.forEach(function(pg, index) {
     const seed = index + 1;
-    paintPattern(pg, COMPARE_SIZE, currentName, currentDate, currentPlace, currentOcc, seed);
+    paintPattern(pg, COMPARE_SIZE, patternName(), currentDate, currentPlace, currentOcc, seed);
     const tile = pg.elt.parentElement;
     tile.classList.toggle('is-current', seed === currentSeed);
     tile.setAttribute('aria-label', 'Choose variation ' + seed);
@@ -243,6 +281,7 @@ function wireInputs() {
   textFields.forEach(function(field) {
     document.getElementById(field.id).addEventListener('input', function(event) {
       field.apply(event.target.value);
+      if (field.id === 'input-name') updateNameDependentUi();
       scheduleRedraw();
     });
   });
@@ -284,12 +323,12 @@ function wireInputs() {
     showToast('Rendering 2400 × 2400 px…');
     // Let the toast paint before the heavy render blocks the page
     setTimeout(function() {
-      exportHighResPng(currentName, currentDate, currentPlace, currentOcc, currentSeed);
+      exportHighResPng(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
     }, 50);
   });
 
   document.getElementById('btn-svg').addEventListener('click', function() {
-    exportSvg(currentName, currentDate, currentPlace, currentOcc, currentSeed);
+    exportSvg(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
     showToast('SVG saved — outline the text before printing');
   });
 }

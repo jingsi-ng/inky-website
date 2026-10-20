@@ -37,8 +37,12 @@
     <div class="generator-layout">
 
       <!-- ===== Left: input panel ===== -->
-      <aside class="panel card" aria-label="Design controls">
+      <!-- On desktop the panel is one sticky card. Below 1025px it "dissolves"
+           (display: contents) so its two groups can sit either side of the
+           canvas: occasion → canvas → details. -->
+      <aside class="panel" aria-label="Design controls">
 
+        <div class="panel-group panel-group--occasion">
         <fieldset class="panel-section">
           <legend class="label">occasion</legend>
           <div class="occasion-grid" role="radiogroup" aria-label="Occasion">
@@ -62,20 +66,23 @@
           <!-- The selected occasion's tagline, as a note on the design's symbolic language -->
           <p class="occasion-note" id="occasion-note" aria-live="polite">drawn from the laurel — love that endures</p>
         </fieldset>
+        </div>
+
+        <div class="panel-group panel-group--details">
 
         <fieldset class="panel-section">
           <legend class="label">your details</legend>
           <label class="field">
             <span class="label">name</span>
-            <input type="text" id="input-name" maxlength="30" placeholder="e.g. Aoife &amp; Ciarán" value="Aoife" autocomplete="off">
+            <input type="text" id="input-name" maxlength="30" placeholder="e.g. Aoife &amp; Ciarán" value="" autocomplete="off">
           </label>
           <label class="field">
             <span class="label">date</span>
-            <input type="text" id="input-date" maxlength="20" placeholder="e.g. 12.06.2027" value="12.06.2027" autocomplete="off">
+            <input type="text" id="input-date" maxlength="20" placeholder="e.g. 12.06.2027" value="" autocomplete="off">
           </label>
           <label class="field">
             <span class="label">place</span>
-            <input type="text" id="input-place" maxlength="24" placeholder="e.g. Dundalk" value="Dundalk" autocomplete="off">
+            <input type="text" id="input-place" maxlength="24" placeholder="e.g. Dundalk" value="" autocomplete="off">
           </label>
         </fieldset>
 
@@ -93,26 +100,32 @@
           <button type="button" class="btn btn-secondary" id="btn-shuffle">Shuffle ↺</button>
         </div>
 
-        <div class="panel-section order-box">
+        <!-- Order code + export stay hidden until a real name (2+ letters) is typed -->
+        <div class="panel-section order-box" data-needs-name>
           <span class="label">your order code</span>
           <div class="order-code-row">
-            <code class="order-code" id="order-code">INK-WE-AOIFE-12062027-DUN-01</code>
+            <code class="order-code" id="order-code"></code>
             <button type="button" class="btn btn-small" id="btn-copy">Copy</button>
           </div>
           <p class="hint">Share this code when ordering — we'll reproduce your exact design.</p>
         </div>
 
-        <div class="panel-section export-row">
+        <div class="panel-section export-row" data-needs-name>
           <button type="button" class="btn btn-secondary" id="btn-png">↓ PNG (300 DPI)</button>
           <button type="button" class="btn btn-secondary" id="btn-svg">↓ SVG</button>
+        </div>
         </div>
       </aside>
 
       <!-- ===== Right: canvas ===== -->
       <section class="canvas-area" aria-label="Pattern preview">
         <div class="canvas-frame" id="single-view">
-          <div id="canvas-container" class="canvas-container"></div>
-          <p class="preview-label" id="preview-label">Aoife · 12.06.2027 · Dundalk</p>
+          <div class="canvas-stage">
+            <div id="canvas-container" class="canvas-container"></div>
+            <!-- Shown over the demo pattern until the visitor starts typing -->
+            <p class="canvas-overlay" id="canvas-overlay">Enter your name to generate your pattern</p>
+          </div>
+          <p class="preview-label" id="preview-label">inky · sample pattern</p>
         </div>
 
         <div class="compare-view" id="compare-view" hidden>

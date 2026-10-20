@@ -104,7 +104,7 @@ body {
   font-size: 16.5px;
   line-height: 1.75;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;   /* clip, not hidden: hidden would break position: sticky */
 }
 
 h1, h2, h3 {
@@ -502,16 +502,58 @@ img, svg, canvas { max-width: 100%; }
   gap: 32px;
   align-items: start;
 }
-@media (max-width: 700px) {
-  .generator-layout { grid-template-columns: 1fr; gap: 24px; }
-  /* Canvas goes FIRST on mobile */
-  .panel { order: 2; }
-  .canvas-area { order: 1; }
+
+/* Desktop: the panel is one card that scrolls on its own if it is taller
+   than the screen, and the canvas stays in view beside it */
+.panel {
+  position: sticky;
+  top: calc(var(--nav-height) + 16px);
+  max-height: calc(100vh - var(--nav-height) - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 22px 22px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.canvas-area {
+  position: sticky;
+  top: calc(var(--nav-height) + 16px);
+}
+
+/* Phone + tablet: one column, ordered
+   occasion → canvas + preview label → details, slider, actions, code, export */
+@media (max-width: 1024px) {
+  .generator-layout { grid-template-columns: 1fr; gap: 20px; }
+  .panel { display: contents; }   /* let its two groups join the grid */
+  .canvas-area { position: relative; top: auto; }
+  .panel-group {
+    padding: 4px 20px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .panel-group--occasion { order: 1; }
+  .canvas-area           { order: 2; }
+  .panel-group--details  { order: 3; }
+  .panel-group--details .panel-section:first-child { padding-top: 18px; }
+}
+@media (max-width: 767px) {
+  .generator-layout, .generator-intro { --gutter: 16px; }  /* canvas = screen − 32px */
   .generator-intro { padding-top: 24px; padding-bottom: 16px; }
   .generator-intro .lede { display: none; }
 }
 
-.panel { padding: 8px 22px 22px; }
+/* Desktop: keep the divider between the occasion group and the details */
+@media (min-width: 1025px) {
+  .panel-group--occasion .panel-section:last-child {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 18px;
+  }
+}
+
+/* Order code + export appear once a name has been typed */
+[data-needs-name]:not(.is-shown) { display: none; }
 
 .panel-section {
   border: 0;
@@ -665,9 +707,32 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 }
 
 /* Canvas area */
-.canvas-area { position: relative; min-width: 0; }
+.canvas-area { min-width: 0; }   /* position is set in the layout rules above */
 .canvas-frame { display: flex; flex-direction: column; align-items: center; }
+.canvas-stage { position: relative; width: 100%; }
 .canvas-container { width: 100%; display: flex; justify-content: center; }
+.canvas-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  max-width: calc(100% - 48px);
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: var(--amber-text);
+  background: rgba(250, 246, 240, 0.88);   /* soft paper wash so it reads over strokes */
+  border: 1px solid var(--bone);
+  border-radius: var(--radius-btn);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+/* The pattern canvas is always light, so keep the overlay text dark there */
+@media (prefers-color-scheme: dark) { .canvas-overlay { color: #6e5e32; } }
+.canvas-overlay.is-hidden { opacity: 0; }
 .canvas-container canvas {
   display: block;
   border-radius: var(--radius);
@@ -796,16 +861,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   .flow-arrow .arrow-v { display: inline; }
 }
 
-/* Section 2 — dark feature section */
-.section--ink {
-  background: var(--section-ink);
-  color: var(--on-ink);
-  --amber-text: var(--amber);
-  --text-muted: #d9ccb4;
-}
-.section--ink h2 { color: var(--on-ink); }
-.section--ink .step-number { color: #c07050; }  /* rust, brightened for the dark ground */
-
+/* Section 2 — how the generator works, on bone like index.html */
 .make-grid {
   list-style: none;
   padding: 0;
@@ -814,10 +870,11 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
   gap: 40px 56px;
   margin-top: 12px;
 }
-.make-step { border-top: 1px solid rgba(240, 232, 216, 0.16); padding-top: 22px; }
+.make-step { border-top: 1px solid rgba(42, 30, 16, 0.14); padding-top: 22px; }
 .make-step .step-number { font-size: 32px; }
-.make-step h3 { color: var(--on-ink); margin-bottom: 8px; }
+.make-step h3 { margin-bottom: 8px; }
 .make-step p { color: var(--text-muted); margin: 0; }
+@media (prefers-color-scheme: dark) { .make-step { border-top-color: var(--border); } }
 @media (max-width: 680px) { .make-grid { grid-template-columns: 1fr; gap: 28px; } }
 
 /* Section 3 — occasion system */
