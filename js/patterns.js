@@ -4,7 +4,8 @@
    Everything that decides WHAT a pattern looks like lives here.
    - hashString / createRng  : deterministic randomness (same input → same art)
    - LETTER_STROKES          : a hand-drawn skeleton for every letter A–Z
-   - PALETTES                : one colour palette per occasion
+   - PALETTES                : colour palette + symbolic motifs per occasion
+   - drawMotif & friends     : laurel, flower, feather, star … drawing functions
    - buildPatternData        : turns name/date/place/occasion/seed into pure data
    - paintPattern            : draws that data onto any p5 canvas or p5.Graphics
    - generateOrderCode       : the code a customer quotes when ordering
@@ -202,32 +203,48 @@ function rngPick(rng, list) {
 }
 
 /* --------------------------------------------------------------------------
-   3. Occasion palettes
+   3. Occasion palettes + motif system
+   Each occasion has a colour palette AND a set of symbolic shapes taken
+   from old stories of transformation. They are drawn faintly behind the
+   brushstrokes and as tiny accents on top — a quiet visual mythology,
+   never a literal illustration.
    -------------------------------------------------------------------------- */
 const PALETTES = {
   wedding: {
     bg: '#f5ede0',
     brushColors: ['#c2a888', '#8c6040', '#c8b090', '#d4bc9c'],
     accent: '#8c4a2a',
-    ink: '#2a1e10'
+    ink: '#2a1e10',
+    // Source: Daphne transformed into the laurel (Apollo & Daphne)
+    // Motifs: laurel sprig, branching lines, small almond leaves
+    motifs: ['laurel', 'branch', 'leaf']
   },
   birthday: {
     bg: '#edf0e6',
     brushColors: ['#88a870', '#4a6828', '#a8c890', '#6a9858'],
     accent: '#3a5818',
-    ink: '#1c2814'
+    ink: '#1c2814',
+    // Source: Narcissus becoming the narcissus flower; Persephone and spring
+    // Motifs: 5/6-petal flower, radiating petal lines, circular bloom rings
+    motifs: ['flower', 'petal', 'bloom']
   },
   marathon: {
     bg: '#f0e8e0',
     brushColors: ['#b89078', '#7a4830', '#d0a888', '#a07858'],
     accent: '#6a3820',
-    ink: '#241810'
+    ink: '#241810',
+    // Source: Atalanta the runner; the laurel crown of victory
+    // Motifs: laurel crown arc, feather (speed), fanned wing
+    motifs: ['crown', 'feather', 'wing']
   },
   match: {
     bg: '#e8eaf0',
     brushColors: ['#8090b8', '#304870', '#a0b0d0', '#5870a0'],
     accent: '#2a3860',
-    ink: '#141c28'
+    ink: '#141c28',
+    // Source: Castor & Pollux placed in the sky as Gemini — teamwork, stars
+    // Motifs: star/asterisk, constellation dot-and-line, orbit rings
+    motifs: ['star', 'constellation', 'orbit']
   }
 };
 
@@ -314,7 +331,7 @@ function buildPatternData(name, date, place, occasion, seedOffset) {
   const px = function(value) { return value / REFERENCE_SIZE; }; // px → normalised
 
   addBackgroundDots(elements, rng, palette, px);
-  addGeometricUnderlay(elements, rng, palette, px);
+  addMotifUnderlay(elements, rng, palette, px);
   const letterCentres = addLetterBrushstrokes(elements, rng, palette, px, letters);
   addDecorativeLines(elements, rng, palette, px, letterCentres);
   addAccentMarks(elements, rng, palette, px);
@@ -338,74 +355,25 @@ function addBackgroundDots(elements, rng, palette, px) {
   }
 }
 
-// 2. Large, very faint geometric shapes behind everything
-function addGeometricUnderlay(elements, rng, palette, px) {
-  const shapeCount = rngInt(rng, 3, 6);
-  const shapeTypes = ['arc', 'rect', 'triangle', 'diagonal', 'polygon'];
-
-  for (let i = 0; i < shapeCount; i++) {
-    const shapeType = rngPick(rng, shapeTypes);
-    const color = rngPick(rng, palette.brushColors);
-    const alpha = rngRange(rng, 0.04, 0.08);
-    const base = { layer: 'underlay', color, alpha };
-
-    if (shapeType === 'arc') {
-      const start = rngRange(rng, 0, Math.PI * 2);
-      elements.push(Object.assign({}, base, {
-        type: 'arc',
-        x: rngRange(rng, 0.2, 0.8),
-        y: rngRange(rng, 0.2, 0.7),
-        d: rngRange(rng, 0.35, 0.8),
-        start: start,
-        stop: start + rngRange(rng, Math.PI * 0.6, Math.PI * 2),
-        weight: px(rngRange(rng, 6, 18))   // thick, soft wash of colour
-      }));
-    } else if (shapeType === 'rect') {
-      const w = rngRange(rng, 0.25, 0.6);
-      const h = rngRange(rng, 0.2, 0.55);
-      elements.push(Object.assign({}, base, {
-        type: 'rect',
-        x: rngRange(rng, 0.05, 0.95 - w),
-        y: rngRange(rng, 0.05, 0.9 - h),
-        w: w,
-        h: h,
-        weight: px(1),
-        alpha: alpha * 2.5 // a 1px outline needs more alpha to read at all
-      }));
-    } else if (shapeType === 'triangle') {
-      const cx = rngRange(rng, 0.25, 0.75);
-      const cy = rngRange(rng, 0.25, 0.65);
-      const size = rngRange(rng, 0.2, 0.4);
-      const points = [];
-      for (let k = 0; k < 3; k++) {
-        const angle = rng() * Math.PI * 2;
-        points.push([cx + Math.cos(angle) * size, cy + Math.sin(angle) * size]);
-      }
-      elements.push(Object.assign({}, base, { type: 'polygon', points: points }));
-    } else if (shapeType === 'diagonal') {
-      const fromLeft = rng() < 0.5;
-      elements.push(Object.assign({}, base, {
-        type: 'line',
-        x1: fromLeft ? rngRange(rng, 0, 0.15) : rngRange(rng, 0.85, 1),
-        y1: rngRange(rng, 0, 0.2),
-        x2: fromLeft ? rngRange(rng, 0.85, 1) : rngRange(rng, 0, 0.15),
-        y2: rngRange(rng, 0.8, 1),
-        weight: px(1),
-        alpha: alpha * 2.5
-      }));
-    } else {
-      // Irregular polygon with 5–7 points around a centre
-      const cx = rngRange(rng, 0.25, 0.75);
-      const cy = rngRange(rng, 0.25, 0.65);
-      const pointCount = rngInt(rng, 5, 7);
-      const points = [];
-      for (let k = 0; k < pointCount; k++) {
-        const angle = (k / pointCount) * Math.PI * 2 + rngRange(rng, -0.3, 0.3);
-        const radius = rngRange(rng, 0.12, 0.32);
-        points.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
-      }
-      elements.push(Object.assign({}, base, { type: 'polygon', points: points }));
-    }
+// 2. Motif underlay: 4–7 large, very faint occasion symbols behind everything
+function addMotifUnderlay(elements, rng, palette, px) {
+  const motifCount = rngInt(rng, 4, 7);
+  for (let i = 0; i < motifCount; i++) {
+    elements.push({
+      type: 'motif',
+      layer: 'underlay',
+      kind: rngPick(rng, palette.motifs),
+      x: rngRange(rng, 0.1, 0.9),
+      y: rngRange(rng, 0.1, 0.72),
+      size: px(rngRange(rng, 30, 120)),
+      angle: rngRange(rng, 0, Math.PI * 2),
+      // The motif's own details (twig angles, star positions …) come from
+      // this sub-seed, so canvas and SVG draw the identical shape
+      motifSeed: Math.floor(rng() * 4294967296),
+      color: rngPick(rng, palette.brushColors),
+      alpha: rngRange(rng, 0.05, 0.09),
+      weight: px(1.6)
+    });
   }
 }
 
@@ -543,6 +511,24 @@ function addAccentMarks(elements, rng, palette, px) {
     }
     elements.push(mark);
   }
+
+  // A few tiny occasion motifs in the foreground — the "maker's stamp"
+  const motifAccentCount = rngInt(rng, 2, 4);
+  for (let i = 0; i < motifAccentCount; i++) {
+    elements.push({
+      type: 'motif',
+      layer: 'accent',
+      kind: rngPick(rng, palette.motifs),
+      x: rngRange(rng, 0.08, 0.92),
+      y: rngRange(rng, 0.1, 0.7),
+      size: px(rngRange(rng, 12, 22)),
+      angle: rngRange(rng, 0, Math.PI * 2),
+      motifSeed: Math.floor(rng() * 4294967296),
+      color: palette.accent,
+      alpha: rngRange(rng, 0.2, 0.45),
+      weight: px(0.9)
+    });
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -610,25 +596,11 @@ function drawElement(p, size, el, fade) {
       p.circle(S(el.x), S(el.y), S(el.r) * 2);
       break;
 
-    case 'arc':
-      p.noFill();
+    case 'motif':
       setStroke(p, el.color, alpha, S(el.weight));
-      p.strokeCap('round');
-      p.arc(S(el.x), S(el.y), S(el.d), S(el.d), el.start, el.stop);
-      break;
-
-    case 'rect':
-      p.noFill();
-      setStroke(p, el.color, alpha, S(el.weight));
-      p.rect(S(el.x), S(el.y), S(el.w), S(el.h));
-      break;
-
-    case 'polygon':
-      p.noStroke();
       setFill(p, el.color, alpha);
-      p.beginShape();
-      el.points.forEach(function(pt) { p.vertex(S(pt[0]), S(pt[1])); });
-      p.endShape('close');
+      p.strokeCap('round');
+      drawMotif(p, el.kind, S(el.x), S(el.y), S(el.size), el.angle, createRng(el.motifSeed));
       break;
 
     case 'line':
@@ -773,7 +745,425 @@ function drawPatternText(p, size, name, date, place, occasion, seed, palette) {
 }
 
 /* --------------------------------------------------------------------------
-   8. Order code — encodes every parameter, so no database is needed
+   8. Motif drawing library — the occasion's symbolic shapes
+   Every function below only uses a small slice of the p5 API (push/pop,
+   translate/rotate, line, circle, ellipse, beginShape/vertex/curveVertex,
+   noFill/noStroke). The caller sets the colour first; each function turns
+   off fill or stroke inside its own push()/pop() as it needs.
+   Because the slice is so small, the SVG exporter can hand these exact
+   functions a "pen" that writes SVG instead of pixels (see createSvgPen).
+   -------------------------------------------------------------------------- */
+
+// Draws one motif centred on (x, y). `size` is in pixels.
+function drawMotif(p, kind, x, y, size, angle, rng) {
+  switch (kind) {
+    // --- wedding: laurel, branch, leaf ---
+    case 'laurel':  drawLaurel(p, x, y, size, angle, rng); break;
+    case 'branch':  drawBranch(p, x, y, size, angle, rng); break;
+    case 'leaf':    drawLeaf(p, x, y, size, angle); break;
+
+    // --- birthday: flower, petal, bloom ---
+    case 'flower':
+      p.push();
+      p.translate(x, y);
+      p.rotate(angle);
+      drawFlower(p, 0, 0, size, rng() < 0.5 ? 5 : 6);
+      p.pop();
+      break;
+    case 'petal':   drawPetalBurst(p, x, y, size, angle, rng); break;
+    case 'bloom':   drawBloom(p, x, y, size, angle, rng); break;
+
+    // --- marathon: crown, feather, wing ---
+    case 'crown':
+      p.push();
+      p.translate(x, y);
+      p.rotate(angle * 0.25);         // crowns only tilt a little
+      drawCrownArc(p, 0, 0, size / 2);
+      p.pop();
+      break;
+    case 'feather': drawFeather(p, x, y, size, angle, rng); break;
+    case 'wing':    drawWing(p, x, y, size, angle, rng); break;
+
+    // --- match: star, constellation, orbit ---
+    case 'star':
+      p.push();
+      p.translate(x, y);
+      p.rotate(angle);
+      drawStar(p, 0, 0, size, 6);
+      p.pop();
+      break;
+    case 'constellation': drawConstellation(p, x, y, size, rng); break;
+    case 'orbit':   drawOrbit(p, x, y, size, angle, rng); break;
+  }
+}
+
+// A smooth open curve through the given points (first/last repeated so
+// curveVertex actually reaches the ends)
+function drawSmoothLine(p, points) {
+  p.push();
+  p.noFill();
+  p.beginShape();
+  p.curveVertex(points[0][0], points[0][1]);
+  points.forEach(function(pt) { p.curveVertex(pt[0], pt[1]); });
+  p.curveVertex(points[points.length - 1][0], points[points.length - 1][1]);
+  p.endShape();
+  p.pop();
+}
+
+// Points along a gently bowed spine from (0,0) to (length, 0)
+function bowedSpine(length, bend, steps) {
+  const points = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    points.push([t * length, Math.sin(t * Math.PI) * bend]);
+  }
+  return points;
+}
+
+// LAUREL / BRANCH — wedding
+// Draw a branching line: one main curved stroke, 4–6 short offshoots at intervals
+function drawBranch(p, x, y, length, angle, rng) {
+  const bend = rngRange(rng, -0.12, 0.12) * length;
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  p.translate(-length / 2, 0);          // centre the branch on (x, y)
+  drawSmoothLine(p, bowedSpine(length, bend, 4));
+
+  const offshootCount = rngInt(rng, 4, 6);
+  for (let i = 0; i < offshootCount; i++) {
+    const t = 0.18 + 0.72 * (i / offshootCount);
+    const side = i % 2 === 0 ? -1 : 1;  // alternate above / below
+    const startX = t * length;
+    const startY = Math.sin(t * Math.PI) * bend;
+    const twigAngle = side * rngRange(rng, 0.5, 0.8);
+    const twigLength = length * rngRange(rng, 0.18, 0.3);
+    p.line(startX, startY,
+      startX + Math.cos(twigAngle) * twigLength,
+      startY + Math.sin(twigAngle) * twigLength);
+  }
+  p.pop();
+}
+
+// Laurel sprig: a spine with pairs of leaves, plus one leaf at the tip
+function drawLaurel(p, x, y, length, angle, rng) {
+  const bend = rngRange(rng, -0.1, 0.1) * length;
+  const leafSize = length * 0.24;
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  p.translate(-length / 2, 0);
+  drawSmoothLine(p, bowedSpine(length, bend, 4));
+
+  const pairCount = rngInt(rng, 4, 6);
+  for (let i = 0; i < pairCount; i++) {
+    const t = 0.12 + 0.75 * (i / pairCount);
+    const baseX = t * length;
+    const baseY = Math.sin(t * Math.PI) * bend;
+    [-1, 1].forEach(function(side) {
+      const leafAngle = side * 0.6;     // leaves sweep forward, toward the tip
+      drawLeaf(p,
+        baseX + Math.cos(leafAngle) * leafSize / 2,
+        baseY + Math.sin(leafAngle) * leafSize / 2,
+        leafSize, leafAngle);
+    });
+  }
+  drawLeaf(p, length + leafSize * 0.4, 0, leafSize, 0);
+  p.pop();
+}
+
+// LEAF — small oval rotated to angle, pointed at both ends
+// Use beginShape/curveVertex with 6 points making an almond shape
+function drawLeaf(p, x, y, size, angle) {
+  const half = size / 2;
+  const width = size * 0.22;
+  const tipLeft  = [-half, 0];
+  const tipRight = [half, 0];
+  const upper1 = [-size / 6, -width], upper2 = [size / 6, -width];
+  const lower2 = [size / 6, width],   lower1 = [-size / 6, width];
+
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  p.noStroke();
+  p.beginShape();
+  // Each tip is listed twice so the curve comes to a point there
+  [tipLeft, tipLeft, upper1, upper2, tipRight, tipRight, lower2, lower1, tipLeft, tipLeft]
+    .forEach(function(pt) { p.curveVertex(pt[0], pt[1]); });
+  p.endShape();
+  p.pop();
+}
+
+// FLOWER / BLOOM — birthday
+// Draw N petals (5 or 6) radiating from centre
+// Each petal: a small ellipse rotated to angle
+function drawFlower(p, x, y, size, petalCount) {
+  p.push();
+  p.translate(x, y);
+  p.noStroke();
+  for (let i = 0; i < petalCount; i++) {
+    p.push();
+    p.rotate((i / petalCount) * Math.PI * 2);
+    p.ellipse(size * 0.25, 0, size * 0.45, size * 0.2);
+    p.pop();
+  }
+  p.circle(0, 0, size * 0.16);
+  p.pop();
+}
+
+// Radiating petal lines: thin rays, each ending in a tiny petal
+function drawPetalBurst(p, x, y, size, angle, rng) {
+  const rayCount = rngInt(rng, 8, 12);
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  for (let i = 0; i < rayCount; i++) {
+    const rayAngle = (i / rayCount) * Math.PI * 2;
+    const inner = size * 0.12;
+    const outer = size * rngRange(rng, 0.32, 0.46);
+    const cos = Math.cos(rayAngle), sin = Math.sin(rayAngle);
+    p.line(cos * inner, sin * inner, cos * outer, sin * outer);
+    drawLeaf(p, cos * (outer + size * 0.04), sin * (outer + size * 0.04), size * 0.1, rayAngle);
+  }
+  p.pop();
+}
+
+// Circular bloom rings: 2–3 concentric rings with seeds dotted on the outer one
+function drawBloom(p, x, y, size, angle, rng) {
+  const ringCount = rngInt(rng, 2, 3);
+  const seedCount = rngInt(rng, 6, 9);
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  p.push();
+  p.noFill();
+  for (let i = 1; i <= ringCount; i++) {
+    p.circle(0, 0, size * (i / ringCount));
+  }
+  p.pop();
+  p.push();
+  p.noStroke();
+  for (let i = 0; i < seedCount; i++) {
+    const seedAngle = (i / seedCount) * Math.PI * 2;
+    p.circle(Math.cos(seedAngle) * size / 2, Math.sin(seedAngle) * size / 2, size * 0.06);
+  }
+  p.pop();
+  p.pop();
+}
+
+// CROWN ARC — marathon
+// Draw a partial arc (bottom half of a circle), then 5–7 short upward spikes along it
+function drawCrownArc(p, x, y, radius) {
+  const spikeCount = 5 + Math.round(radius) % 3;   // 5–7, stable for a given size
+  p.push();
+  p.translate(x, y);
+  p.noFill();
+
+  // Bottom half: angles 0 → PI (y points down in p5)
+  p.beginShape();
+  const steps = 16;
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI;
+    p.vertex(Math.cos(a) * radius, Math.sin(a) * radius);
+  }
+  p.endShape();
+
+  // Upward spikes, tallest in the middle like a victor's wreath
+  for (let i = 0; i < spikeCount; i++) {
+    const a = Math.PI * (0.12 + 0.76 * (i / (spikeCount - 1)));
+    const baseX = Math.cos(a) * radius;
+    const baseY = Math.sin(a) * radius;
+    const height = radius * (0.25 + 0.2 * Math.sin(a));
+    p.line(baseX, baseY, baseX, baseY - height);
+  }
+  p.pop();
+}
+
+// FEATHER — marathon
+// A curved central spine, then alternating short angled strokes either side
+function drawFeather(p, x, y, length, angle, rng) {
+  const bend = rngRange(rng, 0.04, 0.1) * length;
+  const barbCount = rngInt(rng, 8, 12);
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  p.translate(-length / 2, 0);
+  drawSmoothLine(p, bowedSpine(length, bend, 4));
+
+  for (let i = 0; i < barbCount; i++) {
+    const t = 0.15 + 0.8 * (i / barbCount);
+    const side = i % 2 === 0 ? -1 : 1;
+    const baseX = t * length;
+    const baseY = Math.sin(t * Math.PI) * bend;
+    const barbLength = length * 0.2 * (1 - t * 0.6);      // shorter toward the tip
+    const barbAngle = side * rngRange(rng, 0.5, 0.7);      // swept toward the tip
+    p.line(baseX, baseY,
+      baseX + Math.cos(barbAngle) * barbLength,
+      baseY + Math.sin(barbAngle) * barbLength);
+  }
+  p.pop();
+}
+
+// Wing: 3–5 feathers fanned from one root — speed
+function drawWing(p, x, y, size, angle, rng) {
+  const featherCount = rngInt(rng, 3, 5);
+  const spread = 0.9;
+  for (let i = 0; i < featherCount; i++) {
+    const offset = (i / (featherCount - 1) - 0.5) * spread;
+    const featherAngle = angle + offset;
+    const featherLength = size * (1 - i * 0.12);
+    // Each feather starts at the shared root (x, y)
+    drawFeather(p,
+      x + Math.cos(featherAngle) * featherLength / 2,
+      y + Math.sin(featherAngle) * featherLength / 2,
+      featherLength, featherAngle, rng);
+  }
+}
+
+// STAR / ASTERISK — match
+// 6 lines radiating from centre at equal angles, each with a tiny dot at the tip
+function drawStar(p, x, y, size, points) {
+  const radius = size / 2;
+  p.push();
+  p.translate(x, y);
+  for (let i = 0; i < points; i++) {
+    const a = (i / points) * Math.PI * 2;
+    p.line(0, 0, Math.cos(a) * radius, Math.sin(a) * radius);
+  }
+  p.noStroke();
+  for (let i = 0; i < points; i++) {
+    const a = (i / points) * Math.PI * 2;
+    p.circle(Math.cos(a) * radius, Math.sin(a) * radius, Math.max(size * 0.08, 1.5));
+  }
+  p.pop();
+}
+
+// CONSTELLATION — match
+// 3–5 dots placed near each other (like stars), connected by very thin lines
+function drawConstellation(p, x, y, spread, rng) {
+  const starCount = rngInt(rng, 3, 5);
+  const stars = [];
+  for (let i = 0; i < starCount; i++) {
+    stars.push([x + rngRange(rng, -0.5, 0.5) * spread, y + rngRange(rng, -0.5, 0.5) * spread]);
+  }
+  // Join them in left-to-right order so the lines don't cross much
+  stars.sort(function(a, b) { return a[0] - b[0]; });
+
+  p.push();
+  for (let i = 1; i < stars.length; i++) {
+    p.line(stars[i - 1][0], stars[i - 1][1], stars[i][0], stars[i][1]);
+  }
+  p.noStroke();
+  stars.forEach(function(star, index) {
+    // Every other star is a little brighter (bigger)
+    p.circle(star[0], star[1], Math.max(spread * (index % 2 === 0 ? 0.07 : 0.045), 2));
+  });
+  p.pop();
+}
+
+// Orbit: two tilted ellipses with a small body travelling on the outer one
+function drawOrbit(p, x, y, size, angle, rng) {
+  const squash = rngRange(rng, 0.32, 0.5);
+  const bodyAngle = rngRange(rng, 0, Math.PI * 2);
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  p.push();
+  p.noFill();
+  p.ellipse(0, 0, size, size * squash);
+  p.ellipse(0, 0, size * 0.62, size * squash * 0.62);
+  p.pop();
+  p.push();
+  p.noStroke();
+  p.circle(Math.cos(bodyAngle) * size / 2, Math.sin(bodyAngle) * size * squash / 2, Math.max(size * 0.07, 2));
+  p.pop();
+  p.pop();
+}
+
+/* --------------------------------------------------------------------------
+   9. SVG pen — a stand-in for p5 that writes SVG tags instead of pixels.
+   It supports exactly the calls the motif functions above make, so the
+   vector export draws motifs with the very same code as the canvas.
+   -------------------------------------------------------------------------- */
+function createSvgPen(color, alpha, weight) {
+  const tags = [];
+  const stack = [];
+  // matrix [a, b, c, d, e, f] maps (x, y) → (a·x + c·y + e, b·x + d·y + f)
+  let state = { fill: true, stroke: true, matrix: [1, 0, 0, 1, 0, 0] };
+  let shapePoints = null;
+  const r = function(v) { return +v.toFixed(2); };
+
+  // Shared attributes: current transform + current fill/stroke switches
+  function styleAttrs() {
+    const m = state.matrix.map(function(v) { return +v.toFixed(4); }).join(' ');
+    const fill = state.fill
+      ? `fill="${color}" fill-opacity="${+alpha.toFixed(3)}"`
+      : 'fill="none"';
+    const stroke = state.stroke
+      ? `stroke="${color}" stroke-opacity="${+alpha.toFixed(3)}" stroke-width="${r(weight)}"`
+      : 'stroke="none"';
+    return `transform="matrix(${m})" ${fill} ${stroke}`;
+  }
+
+  // Catmull-Rom (what p5's curveVertex draws) → cubic Bézier path
+  function curvePath(points) {
+    let d = `M ${r(points[1][0])} ${r(points[1][1])}`;
+    for (let i = 1; i < points.length - 2; i++) {
+      const p0 = points[i - 1], p1 = points[i], p2 = points[i + 1], p3 = points[i + 2];
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ` C ${r(c1[0])} ${r(c1[1])} ${r(c2[0])} ${r(c2[1])} ${r(p2[0])} ${r(p2[1])}`;
+    }
+    return d;
+  }
+
+  return {
+    push: function() { stack.push({ fill: state.fill, stroke: state.stroke, matrix: state.matrix.slice() }); },
+    pop: function() { state = stack.pop(); },
+    translate: function(x, y) {
+      const m = state.matrix;
+      m[4] += m[0] * x + m[2] * y;
+      m[5] += m[1] * x + m[3] * y;
+    },
+    rotate: function(t) {
+      const m = state.matrix;
+      const cos = Math.cos(t), sin = Math.sin(t);
+      state.matrix = [m[0] * cos + m[2] * sin, m[1] * cos + m[3] * sin,
+                      m[2] * cos - m[0] * sin, m[3] * cos - m[1] * sin, m[4], m[5]];
+    },
+    noFill: function() { state.fill = false; },
+    noStroke: function() { state.stroke = false; },
+    line: function(x1, y1, x2, y2) {
+      tags.push(`<line x1="${r(x1)}" y1="${r(y1)}" x2="${r(x2)}" y2="${r(y2)}" ${styleAttrs()}/>`);
+    },
+    circle: function(x, y, d) {
+      tags.push(`<circle cx="${r(x)}" cy="${r(y)}" r="${r(d / 2)}" ${styleAttrs()}/>`);
+    },
+    ellipse: function(x, y, w, h) {
+      tags.push(`<ellipse cx="${r(x)}" cy="${r(y)}" rx="${r(w / 2)}" ry="${r((h === undefined ? w : h) / 2)}" ${styleAttrs()}/>`);
+    },
+    beginShape: function() { shapePoints = { straight: [], curve: [] }; },
+    vertex: function(x, y) { shapePoints.straight.push([x, y]); },
+    curveVertex: function(x, y) { shapePoints.curve.push([x, y]); },
+    endShape: function(mode) {
+      let d;
+      if (shapePoints.curve.length >= 4) {
+        d = curvePath(shapePoints.curve);
+      } else {
+        d = shapePoints.straight.map(function(pt, i) {
+          return (i === 0 ? 'M ' : 'L ') + r(pt[0]) + ' ' + r(pt[1]);
+        }).join(' ');
+      }
+      if (mode === 'close') d += ' Z';
+      tags.push(`<path d="${d}" ${styleAttrs()}/>`);
+      shapePoints = null;
+    },
+    toString: function() { return tags.join(''); }
+  };
+}
+
+/* --------------------------------------------------------------------------
+   10. Order code — encodes every parameter, so no database is needed
    Example: INK-WE-AOIFE-12062027-DUN-01
    -------------------------------------------------------------------------- */
 function generateOrderCode(name, date, place, occasion, seed) {
@@ -786,7 +1176,7 @@ function generateOrderCode(name, date, place, occasion, seed) {
 }
 
 /* --------------------------------------------------------------------------
-   9. SVG export — built by hand from the same pattern data
+   11. SVG export — built by hand from the same pattern data
    (p5's SVG mode is avoided on purpose.) Units: 1000 × 1000 viewBox,
    printed at 200 × 200 mm.
    -------------------------------------------------------------------------- */
@@ -848,19 +1238,12 @@ function elementToSvg(el, n, a) {
     case 'ring':
       return `<circle cx="${n(el.x)}" cy="${n(el.y)}" r="${n(el.r)}" ${strokeAttrs(el.color, el.alpha, el.weight)}/>`;
 
-    case 'arc': {
-      const r = el.d / 2;
-      const sx = el.x + Math.cos(el.start) * r, sy = el.y + Math.sin(el.start) * r;
-      const ex = el.x + Math.cos(el.stop) * r,  ey = el.y + Math.sin(el.stop) * r;
-      const largeArc = (el.stop - el.start) > Math.PI ? 1 : 0;
-      return `<path d="M ${n(sx)} ${n(sy)} A ${n(r)} ${n(r)} 0 ${largeArc} 1 ${n(ex)} ${n(ey)}" ${strokeAttrs(el.color, el.alpha, el.weight)}/>`;
+    case 'motif': {
+      // Same drawing functions as the canvas, written out by an SVG pen
+      const pen = createSvgPen(el.color, el.alpha, n(el.weight));
+      drawMotif(pen, el.kind, n(el.x), n(el.y), n(el.size), el.angle, createRng(el.motifSeed));
+      return `<g class="motif-${el.kind}">${pen}</g>`;
     }
-
-    case 'rect':
-      return `<rect x="${n(el.x)}" y="${n(el.y)}" width="${n(el.w)}" height="${n(el.h)}" ${strokeAttrs(el.color, el.alpha, el.weight)}/>`;
-
-    case 'polygon':
-      return `<polygon points="${el.points.map(function(pt) { return n(pt[0]) + ',' + n(pt[1]); }).join(' ')}" ${fillAttrs}/>`;
 
     case 'line':
       return `<line x1="${n(el.x1)}" y1="${n(el.y1)}" x2="${n(el.x2)}" y2="${n(el.y2)}" ${strokeAttrs(el.color, el.alpha, el.weight)}/>`;
