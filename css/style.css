@@ -46,7 +46,7 @@
   --section-bone: var(--bone);         /* "How it works" / collection grounds */
   --section-ink:  var(--ink);          /* dark feature section + footer */
   --on-ink:       var(--cream);
-  --nav-bg:       rgba(245, 237, 224, 0.9);
+  --nav-bg:       var(--cream);      /* solid: no glassy blur, it isn't inky */
   --shadow:       0 2px 8px rgba(42, 30, 16, 0.06);
 
   /* Type */
@@ -78,7 +78,7 @@
     --section-bone: #2a2016;
     --section-ink:  #120d08;
     --on-ink:       #f0e8d8;
-    --nav-bg:       rgba(26, 19, 12, 0.9);
+    --nav-bg:       #1a130c;
     --shadow:       0 2px 10px rgba(0, 0, 0, 0.35);
     color-scheme: dark;
   }
@@ -172,8 +172,6 @@ img, svg, canvas { max-width: 100%; }
   z-index: 50;
   height: var(--nav-height);
   background: var(--nav-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
 
@@ -210,7 +208,13 @@ img, svg, canvas { max-width: 100%; }
   transition: color 0.2s, border-color 0.2s;
 }
 .nav-links a:hover { color: var(--accent); }
-.nav-links a[aria-current="page"] { border-bottom-color: var(--accent); }
+/* Current page: rust text + a 1px rust underline. The homepage has no
+   active link — the wordmark is "home". */
+.nav-links a[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 700;
+  border-bottom-color: var(--accent);
+}
 
 /* Hamburger (hidden on desktop) */
 .nav-toggle {
@@ -573,7 +577,8 @@ img, svg, canvas { max-width: 100%; }
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-.occasion-btn {
+.occasion-btn,
+.style-btn {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -587,7 +592,9 @@ img, svg, canvas { max-width: 100%; }
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
 }
-.occasion-btn:hover { border-color: var(--accent-hover); }
+.style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.occasion-btn:hover, .style-btn:hover { border-color: var(--accent-hover); }
+.style-btn.is-active,
 .occasion-btn.is-active {
   background: var(--bg);
   border-color: var(--accent);

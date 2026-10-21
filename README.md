@@ -36,25 +36,29 @@ the identical design at any size — 200px previews, the 560px canvas, or the
 
 ## Growth engine (marathon)
 
-The seed decides **what the pattern looks like**; the run data decides **how much of it has grown**.
+The seed decides **what the pattern looks like**; the run data decides **how much of it has
+grown**. A bigger number only ever adds marks — nothing already drawn moves.
 
-| Data | Drives |
-| --- | --- |
-| distance | how much of the seeded route is drawn, and how many contour lanes grow beside it |
-| km splits (optional) | route width, and terracotta on the runner's faster stretches (relative to their own pace); outer lanes switch later, so speed reads as a density gradient in two inks |
-| finish time × how it felt | how far the laurel wreath has grown (leaves appear base-up and never move) |
-| how it felt | leaf size; 0–3 feathers at the finish |
-| fields filled in | 0–2 border lines ("more data, fuller pattern") |
+Two styles, same data:
+
+| Data | A · Laurel sprigs | B · Medallion |
+| --- | --- | --- |
+| distance | one leaf pair per km at a fixed place on fixed sprigs (10K = two sprigs, full = five) | one ray per km, clockwise from the top |
+| km splits (optional) | faster km → larger, terracotta leaves | faster km → longer, terracotta rays |
+| finish time × how it felt | small leaves gather at the base | the laurel ring grows from the bottom up |
+| how it felt | fuller leaves | fuller laurel leaves |
 
 - Colours: terracotta `#8c4a2a` and ink `#2a1e10` on cream `#f5ede0` only; no transparency.
-- Print sizes: tote 20 cm, coaster 9 cm, keychain 5 cm. Lines never go below 0.35 mm,
-  dots below 0.5 mm; text under 1.2 mm is dropped; small prints get simplified detail.
-- SVG export converts text to outlines with opentype.js (Merriweather Bold / Courier Prime
-  WOFF from jsDelivr; 印纪 is embedded as Noto Serif SC outlines, SIL OFL 1.1). If the fonts
-  can't load, it falls back to `<text>` with a PRINT NOTE.
-- Order codes for marathon designs append the run data: `-D422-T034120-I7-P<12 pace chars>`.
-- Wedding, birthday and match still use the brushstroke engine in `patterns.js` (now in
-  brand colours, no dot texture); its exports still use transparency until they move over.
+- Print sizes: tote 20 cm, coaster 9 cm, keychain 5 cm. Lines never below 0.35 mm, dots never
+  below 0.5 mm; text under 1.2 mm is dropped; the medallion thins to every other ray on small prints.
+- SVG export converts text to outlines with opentype.js (Merriweather Bold / Courier Prime WOFF
+  from jsDelivr). If the fonts can't load it falls back to `<text>` with a PRINT NOTE.
+- Order codes for marathon designs append style + run data: `-A-D422-T034120-I7-P<12 pace chars>`.
+- Wedding, birthday and match still use the brushstroke engine in `patterns.js` (brand colours,
+  no dot texture); its exports still use transparency until they move over.
+
+The full build spec — including exact CSS, nav/active-state rules and compare-mode behaviour —
+is in [`docs/inky-claude-code-prompt.md`](docs/inky-claude-code-prompt.md).
 
 ## Generator page behaviour
 

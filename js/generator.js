@@ -20,6 +20,7 @@ let isCompareMode  = false;
 // Marathon run data (raw, as typed) and the chosen print product
 let currentRun     = { distanceKm: null, finishTime: '', splits: '', intensity: 5 };
 let currentProduct = 'tote';
+let currentStyle   = 'sprigs';     // marathon: 'sprigs' or 'medallion'
 
 let mainSketch = null;
 let compareGraphics = [];      // four p5.Graphics reused for Compare mode
@@ -73,7 +74,7 @@ function usesGrowthEngine() {
 function currentGrowthDesign(seed) {
   return buildMarathonDesign({
     name: patternName(), date: currentDate, place: currentPlace,
-    seed: seed, run: currentRun, product: currentProduct
+    seed: seed, style: currentStyle, run: currentRun, product: currentProduct
   });
 }
 
@@ -90,7 +91,7 @@ function paintCurrentDesign(target, size, seed) {
 function currentOrderCode() {
   const base = generateOrderCode(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
   if (!usesGrowthEngine()) return base;
-  return base + '-' + encodeRunData(currentGrowthDesign(currentSeed).run);
+  return base + '-' + encodeDesignCode(currentGrowthDesign(currentSeed));
 }
 
 // Biggest canvas allowed at each screen width (matches the CSS breakpoints)
@@ -207,6 +208,9 @@ function enterCompareMode() {
   if (compareView.getBoundingClientRect().top < 64) {
     compareView.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+  // Keyboard users land on the current variation
+  const current = document.querySelector('.compare-tile.is-current') || document.querySelector('.compare-tile');
+  if (current) current.focus({ preventScroll: true });
 }
 
 function exitCompareMode() {
@@ -215,6 +219,7 @@ function exitCompareMode() {
   document.getElementById('single-view').hidden = false;
   mainSketch.windowResized(); // the column may have changed size while hidden
   mainSketch.redraw();
+  document.getElementById('btn-compare').focus({ preventScroll: true });
 }
 
 // Builds the four tiles once, then just repaints them on later calls
@@ -369,6 +374,10 @@ function wireInputs() {
 
   document.getElementById('btn-compare').addEventListener('click', enterCompareMode);
   document.getElementById('btn-compare-close').addEventListener('click', exitCompareMode);
+  // Escape leaves compare mode without changing the design
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && isCompareMode) exitCompareMode();
+  });
 
   document.getElementById('btn-copy').addEventListener('click', function() {
     const code = document.getElementById('order-code').textContent;
@@ -393,8 +402,20 @@ function wireInputs() {
   wireRunInputs();
 }
 
-// Marathon run data + print size
+// Marathon run data, style + print size
 function wireRunInputs() {
+  document.querySelectorAll('.style-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      currentStyle = btn.dataset.style;
+      document.querySelectorAll('.style-btn').forEach(function(other) {
+        const isActive = other === btn;
+        other.classList.toggle('is-active', isActive);
+        other.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      });
+      triggerRedraw();
+    });
+  });
+
   const distanceInput = document.getElementById('input-distance');
   const setDistance = function(value) {
     const km = parseFloat(value);

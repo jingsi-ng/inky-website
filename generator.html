@@ -66,6 +66,20 @@
           <!-- The selected occasion's tagline, as a note on the design's symbolic language -->
           <p class="occasion-note" id="occasion-note" aria-live="polite">drawn from the laurel — love that endures</p>
         </fieldset>
+        <!-- Marathon has two growth styles; both use the same run data -->
+        <fieldset class="panel-section style-picker" data-occasion-only="marathon" hidden>
+          <legend class="label">style</legend>
+          <div class="style-grid" role="radiogroup" aria-label="Design style">
+            <button type="button" class="style-btn is-active" data-style="sprigs" role="radio" aria-checked="true">
+              <span class="occasion-name">Laurel sprigs</span>
+              <span class="occasion-tagline">a leaf pair for every km</span>
+            </button>
+            <button type="button" class="style-btn" data-style="medallion" role="radio" aria-checked="false">
+              <span class="occasion-name">Medallion</span>
+              <span class="occasion-tagline">a ray for every km</span>
+            </button>
+          </div>
+        </fieldset>
         </div>
 
         <div class="panel-group panel-group--details">
@@ -114,7 +128,7 @@
               <output class="seed-value" id="feeling-value" for="input-feeling">5</output>
             </div>
           </div>
-          <p class="hint">The more you add, the more it grows: distance draws the route, your splits shape its line, your time grows the laurel.</p>
+          <p class="hint">The more you add, the more it grows: every km adds a leaf pair (or a ray), your splits colour the faster ones, and your time grows the laurel.</p>
         </fieldset>
 
         <fieldset class="panel-section">
@@ -176,7 +190,7 @@
             <button type="button" class="btn btn-small" id="btn-compare-close">Back ✕</button>
           </div>
           <div class="compare-grid" id="compare-grid"></div>
-          <p class="hint">Tap a variation to choose it — it becomes your design.</p>
+          <p class="hint">Tap a variation to choose it — it becomes your design. “Back” or Esc keeps the one you had.</p>
         </div>
 
         <p class="toast" id="toast" role="status" aria-live="polite"></p>
