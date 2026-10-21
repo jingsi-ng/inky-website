@@ -86,6 +86,37 @@
           </label>
         </fieldset>
 
+        <!-- Run data (marathon only). The more you fill in, the more the pattern grows. -->
+        <fieldset class="panel-section" id="run-fields" data-occasion-only="marathon" hidden>
+          <legend class="label">your run</legend>
+          <div class="field">
+            <label class="label" for="input-distance">distance (km)</label>
+            <input type="number" id="input-distance" min="0.1" max="100" step="any" inputmode="decimal" placeholder="e.g. 42.195">
+            <div class="chip-row" role="group" aria-label="Common distances">
+              <button type="button" class="chip" data-km="5">5K</button>
+              <button type="button" class="chip" data-km="10">10K</button>
+              <button type="button" class="chip" data-km="21.0975">Half</button>
+              <button type="button" class="chip" data-km="42.195">Full</button>
+            </div>
+          </div>
+          <label class="field">
+            <span class="label">finish time</span>
+            <input type="text" id="input-time" maxlength="8" placeholder="e.g. 3:41:20" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="label">km splits (optional)</span>
+            <textarea id="input-splits" rows="2" placeholder="e.g. 5:12, 5:08, 5:15 …"></textarea>
+          </label>
+          <div class="field">
+            <label class="label" for="input-feeling">how it felt</label>
+            <div class="seed-row">
+              <input type="range" id="input-feeling" min="0" max="10" value="5">
+              <output class="seed-value" id="feeling-value" for="input-feeling">5</output>
+            </div>
+          </div>
+          <p class="hint">The more you add, the more it grows: distance draws the route, your splits shape its line, your time grows the laurel.</p>
+        </fieldset>
+
         <fieldset class="panel-section">
           <legend class="label">design variation</legend>
           <div class="seed-row">
@@ -110,9 +141,20 @@
           <p class="hint">Share this code when ordering — we'll reproduce your exact design.</p>
         </div>
 
-        <div class="panel-section export-row" data-needs-name>
-          <button type="button" class="btn btn-secondary" id="btn-png">↓ PNG (300 DPI)</button>
-          <button type="button" class="btn btn-secondary" id="btn-svg">↓ SVG</button>
+        <div class="panel-section export-box" data-needs-name>
+          <label class="field" data-occasion-only="marathon" hidden>
+            <span class="label">print size</span>
+            <select id="input-product">
+              <option value="tote">Tote bag — 20 cm</option>
+              <option value="coaster">Coaster — 9 cm</option>
+              <option value="keychain">Keychain — 5 cm</option>
+            </select>
+          </label>
+          <div class="export-row">
+            <button type="button" class="btn btn-secondary" id="btn-png" data-occasion-hide="marathon">↓ PNG (300 DPI)</button>
+            <button type="button" class="btn btn-secondary" id="btn-svg">↓ SVG</button>
+          </div>
+          <p class="hint" data-occasion-only="marathon" hidden>Print-ready SVG: two solid inks, text as outlines, lines no thinner than 0.35 mm at the size you pick.</p>
         </div>
         </div>
       </aside>
@@ -164,7 +206,9 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
   <script src="js/patterns.js"></script>
+  <script src="js/growth.js"></script>
   <script src="js/main.js"></script>
   <script src="js/generator.js"></script>
 </body>

@@ -2,7 +2,8 @@
    inky (印纪) — Generator page
    --------------------------------------------------------------------------
    p5.js sketch (instance mode) + input wiring + export.
-   All the "what does it look like" logic lives in patterns.js;
+   All the "what does it look like" logic lives in patterns.js (brushstroke
+   engine: wedding, birthday, match) and growth.js (growth engine: marathon);
    this file only decides WHEN and WHERE to paint.
    ========================================================================== */
 
@@ -15,6 +16,10 @@ let currentPlace   = '';
 let currentOcc     = 'wedding';
 let currentSeed    = 1;
 let isCompareMode  = false;
+
+// Marathon run data (raw, as typed) and the chosen print product
+let currentRun     = { distanceKm: null, finishTime: '', splits: '', intensity: 5 };
+let currentProduct = 'tote';
 
 let mainSketch = null;
 let compareGraphics = [];      // four p5.Graphics reused for Compare mode
@@ -40,7 +45,7 @@ const sketch = function(p) {
   };
 
   p.draw = function() {
-    paintPattern(p, p.width, patternName(), currentDate, currentPlace, currentOcc, currentSeed);
+    paintCurrentDesign(p, p.width, currentSeed);
   };
 
   p.windowResized = function() {
@@ -57,6 +62,35 @@ mainSketch = new p5(sketch);
 // The name actually drawn: the visitor's, or the demo name while empty
 function patternName() {
   return currentName.trim() ? currentName : DEMO_NAME;
+}
+
+// Occasions that already run on the growth engine (growth.js)
+function usesGrowthEngine() {
+  return currentOcc === 'marathon';
+}
+
+// The full growth-engine design for the current inputs (pure data)
+function currentGrowthDesign(seed) {
+  return buildMarathonDesign({
+    name: patternName(), date: currentDate, place: currentPlace,
+    seed: seed, run: currentRun, product: currentProduct
+  });
+}
+
+// Paint the current design at any size, with either engine
+function paintCurrentDesign(target, size, seed) {
+  if (usesGrowthEngine()) {
+    paintDesign(target, size, currentGrowthDesign(seed));
+  } else {
+    paintPattern(target, size, patternName(), currentDate, currentPlace, currentOcc, seed);
+  }
+}
+
+// Order code: the brushstroke code, plus the run data for marathon designs
+function currentOrderCode() {
+  const base = generateOrderCode(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
+  if (!usesGrowthEngine()) return base;
+  return base + '-' + encodeRunData(currentGrowthDesign(currentSeed).run);
 }
 
 // Biggest canvas allowed at each screen width (matches the CSS breakpoints)
@@ -92,8 +126,7 @@ function scheduleRedraw() {
 }
 
 function updateOrderCode() {
-  document.getElementById('order-code').textContent =
-    generateOrderCode(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
+  document.getElementById('order-code').textContent = currentOrderCode();
 }
 
 function updatePreviewLabel() {
@@ -139,6 +172,14 @@ function setOccasion(occasion) {
       document.getElementById('occasion-note').textContent =
         btn.querySelector('.occasion-tagline').textContent;
     }
+  });
+
+  // Show the marathon-only controls (run data, print size) — or hide them
+  document.querySelectorAll('[data-occasion-only]').forEach(function(el) {
+    el.hidden = el.dataset.occasionOnly !== occasion;
+  });
+  document.querySelectorAll('[data-occasion-hide]').forEach(function(el) {
+    el.hidden = el.dataset.occasionHide === occasion;
   });
 }
 
@@ -211,7 +252,7 @@ function renderCompareGrid() {
 
   compareGraphics.forEach(function(pg, index) {
     const seed = index + 1;
-    paintPattern(pg, COMPARE_SIZE, patternName(), currentDate, currentPlace, currentOcc, seed);
+    paintCurrentDesign(pg, COMPARE_SIZE, seed);
     const tile = pg.elt.parentElement;
     tile.classList.toggle('is-current', seed === currentSeed);
     tile.setAttribute('aria-label', 'Choose variation ' + seed);
@@ -237,12 +278,29 @@ function exportHighResPng(name, date, place, occasion, seed) {
 
 function exportSvg(name, date, place, occasion, seed) {
   const svg = buildPatternSvg(name, date, place, occasion, seed);
+  downloadSvg(svg, 'inky-' + generateOrderCode(name, date, place, occasion, seed) + '.svg');
+  showToast('SVG saved — outline the text before printing');
+}
+
+// Growth-engine print file: solid colour, text outlined (fonts load on demand)
+function exportGrowthSvg() {
+  const design = currentGrowthDesign(currentSeed);
+  const orderCode = currentOrderCode();
+  showToast('Preparing print file…');
+  buildDesignSvg(design, { orderCode: orderCode }).then(function(result) {
+    downloadSvg(result.svg, 'inky-' + orderCode + '-' + currentProduct + '.svg');
+    showToast(result.outlined
+      ? 'Print file saved — text already outlined'
+      : 'Saved, but fonts were offline: outline the text before printing');
+  });
+}
+
+function downloadSvg(svg, filename) {
   const blob = new Blob([svg], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
-
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'inky-' + generateOrderCode(name, date, place, occasion, seed) + '.svg';
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -328,8 +386,54 @@ function wireInputs() {
   });
 
   document.getElementById('btn-svg').addEventListener('click', function() {
-    exportSvg(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
-    showToast('SVG saved — outline the text before printing');
+    if (usesGrowthEngine()) exportGrowthSvg();
+    else exportSvg(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
+  });
+
+  wireRunInputs();
+}
+
+// Marathon run data + print size
+function wireRunInputs() {
+  const distanceInput = document.getElementById('input-distance');
+  const setDistance = function(value) {
+    const km = parseFloat(value);
+    currentRun.distanceKm = km > 0 ? km : null;
+  };
+  distanceInput.addEventListener('input', function() {
+    setDistance(distanceInput.value);
+    scheduleRedraw();
+  });
+
+  // Preset chips fill the distance field
+  document.querySelectorAll('.chip[data-km]').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      distanceInput.value = chip.dataset.km;
+      setDistance(chip.dataset.km);
+      triggerRedraw();
+    });
+  });
+
+  document.getElementById('input-time').addEventListener('input', function(event) {
+    currentRun.finishTime = event.target.value;
+    scheduleRedraw();
+  });
+  document.getElementById('input-splits').addEventListener('input', function(event) {
+    currentRun.splits = event.target.value;
+    scheduleRedraw();
+  });
+
+  // Feeling slider: instant, like the seed slider
+  document.getElementById('input-feeling').addEventListener('input', function(event) {
+    currentRun.intensity = parseInt(event.target.value, 10);
+    document.getElementById('feeling-value').textContent = event.target.value;
+    triggerRedraw();
+  });
+
+  // Print size changes the preview too: minimum line widths are real
+  document.getElementById('input-product').addEventListener('change', function(event) {
+    currentProduct = event.target.value;
+    triggerRedraw();
   });
 }
 
@@ -339,6 +443,7 @@ function readInitialValues() {
   currentDate  = document.getElementById('input-date').value;
   currentPlace = document.getElementById('input-place').value;
   setSeed(parseInt(document.getElementById('input-seed').value, 10));
+  setOccasion(currentOcc);   // sync the occasion-specific controls
 }
 
 readInitialValues();

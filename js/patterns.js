@@ -203,49 +203,30 @@ function rngPick(rng, list) {
 }
 
 /* --------------------------------------------------------------------------
-   3. Occasion palettes + motif system
-   Each occasion has a colour palette AND a set of symbolic shapes taken
-   from old stories of transformation. They are drawn faintly behind the
-   brushstrokes and as tiny accents on top — a quiet visual mythology,
-   never a literal illustration.
+   3. Brand palette + occasion motifs
+   Every occasion now uses the same three brand colours — terracotta, cream
+   and ink. Occasions are told apart by STRUCTURE (their symbolic motifs),
+   not by colour. Motifs come from old stories of transformation and are
+   drawn faintly behind the brushstrokes and as tiny accents on top.
+   (Marathon designs use the growth engine in growth.js; the entry here is
+   kept so this engine still has a fallback for it.)
    -------------------------------------------------------------------------- */
+const BRAND_PALETTE = {
+  bg: '#f5ede0',                       // cream
+  brushColors: ['#8c4a2a', '#2a1e10'], // terracotta, ink
+  accent: '#8c4a2a',
+  ink: '#2a1e10'
+};
+
 const PALETTES = {
-  wedding: {
-    bg: '#f5ede0',
-    brushColors: ['#c2a888', '#8c6040', '#c8b090', '#d4bc9c'],
-    accent: '#8c4a2a',
-    ink: '#2a1e10',
-    // Source: Daphne transformed into the laurel (Apollo & Daphne)
-    // Motifs: laurel sprig, branching lines, small almond leaves
-    motifs: ['laurel', 'branch', 'leaf']
-  },
-  birthday: {
-    bg: '#edf0e6',
-    brushColors: ['#88a870', '#4a6828', '#a8c890', '#6a9858'],
-    accent: '#3a5818',
-    ink: '#1c2814',
-    // Source: Narcissus becoming the narcissus flower; Persephone and spring
-    // Motifs: 5/6-petal flower, radiating petal lines, circular bloom rings
-    motifs: ['flower', 'petal', 'bloom']
-  },
-  marathon: {
-    bg: '#f0e8e0',
-    brushColors: ['#b89078', '#7a4830', '#d0a888', '#a07858'],
-    accent: '#6a3820',
-    ink: '#241810',
-    // Source: Atalanta the runner; the laurel crown of victory
-    // Motifs: laurel crown arc, feather (speed), fanned wing
-    motifs: ['crown', 'feather', 'wing']
-  },
-  match: {
-    bg: '#e8eaf0',
-    brushColors: ['#8090b8', '#304870', '#a0b0d0', '#5870a0'],
-    accent: '#2a3860',
-    ink: '#141c28',
-    // Source: Castor & Pollux placed in the sky as Gemini — teamwork, stars
-    // Motifs: star/asterisk, constellation dot-and-line, orbit rings
-    motifs: ['star', 'constellation', 'orbit']
-  }
+  // Source: Daphne transformed into the laurel (Apollo & Daphne)
+  wedding:  Object.assign({ motifs: ['laurel', 'branch', 'leaf'] }, BRAND_PALETTE),
+  // Source: Narcissus becoming the narcissus flower; Persephone and spring
+  birthday: Object.assign({ motifs: ['flower', 'petal', 'bloom'] }, BRAND_PALETTE),
+  // Source: Atalanta the runner; the laurel crown of victory
+  marathon: Object.assign({ motifs: ['crown', 'feather', 'wing'] }, BRAND_PALETTE),
+  // Source: Castor & Pollux placed in the sky as Gemini — teamwork, stars
+  match:    Object.assign({ motifs: ['star', 'constellation', 'orbit'] }, BRAND_PALETTE)
 };
 
 // Human-readable occasion names (used in labels + corner typography)
@@ -330,7 +311,7 @@ function buildPatternData(name, date, place, occasion, seedOffset) {
   const elements = [];
   const px = function(value) { return value / REFERENCE_SIZE; }; // px → normalised
 
-  addBackgroundDots(elements, rng, palette, px);
+  // (The old paper-grain dot field is gone: no noise in printed work)
   addMotifUnderlay(elements, rng, palette, px);
   const letterCentres = addLetterBrushstrokes(elements, rng, palette, px, letters);
   addDecorativeLines(elements, rng, palette, px, letterCentres);
@@ -338,21 +319,6 @@ function buildPatternData(name, date, place, occasion, seedOffset) {
 
   // (Text is drawn directly by paintPattern, not stored as data)
   return { elements, palette, letters, seed };
-}
-
-// 1. Paper-grain dot field
-function addBackgroundDots(elements, rng, palette, px) {
-  for (let i = 0; i < 200; i++) {
-    elements.push({
-      type: 'dot',
-      layer: 'background',
-      x: rng(),
-      y: rng(),
-      r: px(rngRange(rng, 1, 2)),
-      color: palette.brushColors[3],
-      alpha: rngRange(rng, 0.05, 0.1)
-    });
-  }
 }
 
 // 2. Motif underlay: 4–7 large, very faint occasion symbols behind everything

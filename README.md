@@ -22,6 +22,7 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 | `about.html` | Brand story, how the generator works, contact |
 | `css/style.css` | Shared styles, light + dark mode |
 | `js/patterns.js` | Algorithm: hash/RNG, letter skeletons, palettes + occasion motifs, motif drawing functions, `buildPatternData`, `paintPattern`, `generateOrderCode`, SVG builder |
+| `js/growth.js` | Growth engine (v1: marathon): seeded skeleton, data-driven growth, print rules, preview, print-ready SVG with outlined text |
 | `js/generator.js` | p5 sketch (instance mode), input wiring, compare mode, PNG/SVG export |
 | `js/main.js` | Mobile nav, scroll reveal, landing-page hero animation |
 
@@ -32,6 +33,28 @@ generated from that RNG in normalised (0–1) coordinates, so the same inputs re
 the identical design at any size — 200px previews, the 560px canvas, or the
 2400×2400px (300 DPI @ 8in) print export. The order code
 (e.g. `INK-WE-AOIFE-12062027-DUN-01`) carries all the inputs, so no backend is needed.
+
+## Growth engine (marathon)
+
+The seed decides **what the pattern looks like**; the run data decides **how much of it has grown**.
+
+| Data | Drives |
+| --- | --- |
+| distance | how much of the seeded route is drawn, and how many contour lanes grow beside it |
+| km splits (optional) | route width, and terracotta on the runner's faster stretches (relative to their own pace); outer lanes switch later, so speed reads as a density gradient in two inks |
+| finish time × how it felt | how far the laurel wreath has grown (leaves appear base-up and never move) |
+| how it felt | leaf size; 0–3 feathers at the finish |
+| fields filled in | 0–2 border lines ("more data, fuller pattern") |
+
+- Colours: terracotta `#8c4a2a` and ink `#2a1e10` on cream `#f5ede0` only; no transparency.
+- Print sizes: tote 20 cm, coaster 9 cm, keychain 5 cm. Lines never go below 0.35 mm,
+  dots below 0.5 mm; text under 1.2 mm is dropped; small prints get simplified detail.
+- SVG export converts text to outlines with opentype.js (Merriweather Bold / Courier Prime
+  WOFF from jsDelivr; 印纪 is embedded as Noto Serif SC outlines, SIL OFL 1.1). If the fonts
+  can't load, it falls back to `<text>` with a PRINT NOTE.
+- Order codes for marathon designs append the run data: `-D422-T034120-I7-P<12 pace chars>`.
+- Wedding, birthday and match still use the brushstroke engine in `patterns.js` (now in
+  brand colours, no dot texture); its exports still use transparency until they move over.
 
 ## Generator page behaviour
 

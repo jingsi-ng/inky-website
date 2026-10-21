@@ -66,30 +66,56 @@ function setupScrollReveal() {
 }
 
 /* --------------------------------------------------------------------------
-   Hero demo canvas — "Aoife" cycling through the four occasion palettes.
-   Each cycle lasts 4 seconds: brushstrokes draw themselves in, hold,
-   then the next palette cross-fades over the top. Not interactive.
+   Hero demo canvas — a marathon design for "Aoife" GROWING from the start
+   line to the finish: the route draws out, lanes fill in, the laurel
+   climbs. Then it holds, and the next variation grows. Not interactive.
+   Uses the growth engine in growth.js; colours never change.
    -------------------------------------------------------------------------- */
-const HERO_NAME      = 'Aoife';
-const HERO_DATE      = '12.06.2027';
-const HERO_PLACE     = 'Dundalk';
-const HERO_OCCASIONS = ['wedding', 'birthday', 'marathon', 'match'];
-const HERO_SIZE      = 380;    // px, square
-const HERO_CYCLE_MS  = 4000;
-const HERO_DRAW_MS   = 2400;   // time for the strokes to draw in
-const HERO_FADE_MS   = 600;    // cross-fade from the previous palette
+const HERO_NAME     = 'Aoife';
+const HERO_DATE     = '12.06.2027';
+const HERO_PLACE    = 'Dundalk';
+const HERO_SIZE     = 380;    // px, square
+const HERO_GROW_MS  = 3200;   // start line → finish
+const HERO_HOLD_MS  = 1600;   // admire the finished design
+const HERO_FADE_MS  = 600;    // dissolve into the next variation
+const HERO_SEEDS    = [1, 2, 3];
+// A believable race: steady start, slower middle miles, strong finish
+const HERO_SPLITS   = '5:05 5:00 5:02 5:08 5:15 5:22 5:30 5:41 5:35 5:20 5:05 4:50';
+const HERO_PACE_MIN_PER_KM = 5.25;
+
+// Run data at a given growth stage (0 = start line, 1 = finish)
+function heroRunAt(progress) {
+  const km = 42.195 * progress;
+  const totalSeconds = Math.round(km * HERO_PACE_MIN_PER_KM * 60);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const sec = totalSeconds % 60;
+  return {
+    distanceKm: km > 0.2 ? km : null,
+    finishTime: totalSeconds > 0 ? h + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0') : '',
+    splits: HERO_SPLITS,
+    intensity: 7
+  };
+}
+
+function heroDesign(seed, progress) {
+  return buildMarathonDesign({
+    name: HERO_NAME, date: HERO_DATE, place: HERO_PLACE,
+    seed: seed, run: heroRunAt(progress), product: 'tote'
+  });
+}
 
 function setupHeroCanvas() {
   const holder = document.getElementById('hero-canvas');
-  if (!holder || typeof p5 === 'undefined') return;
+  if (!holder || typeof p5 === 'undefined' || typeof buildMarathonDesign === 'undefined') return;
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const heroSketch = function(p) {
-    let cycleIndex = 0;
+    let seedIndex = 0;
     let cycleStart = 0;
-    let previousFrame = null;   // p5.Graphics holding the last finished pattern
-    let hasPrevious = false;    // nothing to fade from on the very first cycle
+    let previousFrame = null;   // p5.Graphics with the last finished design
+    let hasPrevious = false;
     let size = HERO_SIZE;
 
     function heroSize() {
@@ -106,29 +132,26 @@ function setupHeroCanvas() {
 
     p.draw = function() {
       const elapsed = p.millis() - cycleStart;
+      const seed = HERO_SEEDS[seedIndex];
 
-      // Time for the next occasion: remember the finished pattern for the fade
-      if (elapsed >= HERO_CYCLE_MS) {
-        paintPattern(previousFrame, size, HERO_NAME, HERO_DATE, HERO_PLACE,
-          HERO_OCCASIONS[cycleIndex], 1);
+      // Cycle finished: keep the full-grown design for the fade, move on
+      if (elapsed >= HERO_GROW_MS + HERO_HOLD_MS) {
+        paintDesign(previousFrame, size, heroDesign(seed, 1));
         hasPrevious = true;
-        cycleIndex = (cycleIndex + 1) % HERO_OCCASIONS.length;
+        seedIndex = (seedIndex + 1) % HERO_SEEDS.length;
         cycleStart = p.millis();
         return;
       }
 
-      // Ease-out so strokes rush in then settle
-      const linear = prefersReducedMotion ? 1 : Math.min(1, elapsed / HERO_DRAW_MS);
-      const progress = 1 - Math.pow(1 - linear, 3);
+      // Ease-out: fast early kilometres, settling into the finish
+      const linear = prefersReducedMotion ? 1 : Math.min(1, elapsed / HERO_GROW_MS);
+      const progress = 1 - Math.pow(1 - linear, 2);
+      paintDesign(p, size, heroDesign(seed, progress));
 
-      paintPattern(p, size, HERO_NAME, HERO_DATE, HERO_PLACE,
-        HERO_OCCASIONS[cycleIndex], 1, { progress: progress });
-
-      // Cross-fade: the previous pattern dissolves away on top
+      // The previous design dissolves on top (screen only — never printed)
       if (hasPrevious && elapsed < HERO_FADE_MS) {
-        const fadeAlpha = 255 * (1 - elapsed / HERO_FADE_MS);
         p.push();
-        p.tint(255, fadeAlpha);
+        p.tint(255, 255 * (1 - elapsed / HERO_FADE_MS));
         p.image(previousFrame, 0, 0, size, size);
         p.pop();
       }
