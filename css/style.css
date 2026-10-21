@@ -721,7 +721,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 /* Actions */
 .panel-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .export-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
-.export-row [hidden] { display: none; }
+.score-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.score-row .field { margin-bottom: 0; }
 .export-box .field { margin-bottom: 12px; }
 .export-row .btn { font-size: 0.8rem; padding: 10px 6px; white-space: nowrap; }
 

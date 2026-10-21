@@ -1,10 +1,9 @@
 /* ==========================================================================
    inky (印纪) — Generator page
    --------------------------------------------------------------------------
-   p5.js sketch (instance mode) + input wiring + export.
-   All the "what does it look like" logic lives in patterns.js (brushstroke
-   engine: wedding, birthday, match) and growth.js (growth engine: marathon);
-   this file only decides WHEN and WHERE to paint.
+   p5.js sketch (instance mode) + input wiring + compare mode + export.
+   All the "what does it look like" logic lives in growth.js; this file only
+   decides WHEN and WHERE to paint, and keeps the page in sync.
    ========================================================================== */
 
 // ----- Current design state -----
@@ -15,19 +14,24 @@ let currentDate    = '';
 let currentPlace   = '';
 let currentOcc     = 'wedding';
 let currentSeed    = 1;
+let currentStyle   = 'sprigs';     // marathon only: 'sprigs' or 'medallion'
+let currentProduct = 'tote';
+let currentFeeling = 5;            // "how it felt", shared by every occasion
 let isCompareMode  = false;
 
-// Marathon run data (raw, as typed) and the chosen print product
-let currentRun     = { distanceKm: null, finishTime: '', splits: '', intensity: 5 };
-let currentProduct = 'tote';
-let currentStyle   = 'sprigs';     // marathon: 'sprigs' or 'medallion'
+// The data each occasion grows from, exactly as typed
+const occasionData = {
+  wedding:  { years: '', guests: '' },
+  birthday: { age: '' },
+  marathon: { distanceKm: null, finishTime: '', splits: '' },
+  match:    { us: '', them: '' }
+};
 
 let mainSketch = null;
 let compareGraphics = [];      // four p5.Graphics reused for Compare mode
 
 const REDRAW_DELAY_MS = 350;   // debounce for text inputs
 const COMPARE_SIZE    = 200;   // px, each Compare canvas
-const HI_RES          = 2400;  // px, 300 DPI × 8 inches
 const DEMO_NAME       = 'inky';
 const MIN_NAME_LENGTH = 2;     // letters needed before the order code appears
 
@@ -46,7 +50,7 @@ const sketch = function(p) {
   };
 
   p.draw = function() {
-    paintCurrentDesign(p, p.width, currentSeed);
+    paintDesign(p, p.width, currentDesign(currentSeed));
   };
 
   p.windowResized = function() {
@@ -65,33 +69,20 @@ function patternName() {
   return currentName.trim() ? currentName : DEMO_NAME;
 }
 
-// Occasions that already run on the growth engine (growth.js)
-function usesGrowthEngine() {
-  return currentOcc === 'marathon';
-}
-
-// The full growth-engine design for the current inputs (pure data)
-function currentGrowthDesign(seed) {
-  return buildMarathonDesign({
+// The full design for the current inputs at a given seed (pure data)
+function currentDesign(seed) {
+  return buildDesign({
+    occasion: currentOcc,
     name: patternName(), date: currentDate, place: currentPlace,
-    seed: seed, style: currentStyle, run: currentRun, product: currentProduct
+    seed: seed, style: currentStyle, product: currentProduct,
+    data: Object.assign({ intensity: currentFeeling }, occasionData[currentOcc])
   });
 }
 
-// Paint the current design at any size, with either engine
-function paintCurrentDesign(target, size, seed) {
-  if (usesGrowthEngine()) {
-    paintDesign(target, size, currentGrowthDesign(seed));
-  } else {
-    paintPattern(target, size, patternName(), currentDate, currentPlace, currentOcc, seed);
-  }
-}
-
-// Order code: the brushstroke code, plus the run data for marathon designs
+// Order code: who / when / where, then the data the design grew from
 function currentOrderCode() {
-  const base = generateOrderCode(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
-  if (!usesGrowthEngine()) return base;
-  return base + '-' + encodeDesignCode(currentGrowthDesign(currentSeed));
+  return generateOrderCode(patternName(), currentDate, currentPlace, currentOcc, currentSeed) +
+    '-' + encodeDesignCode(currentDesign(currentSeed));
 }
 
 // Biggest canvas allowed at each screen width (matches the CSS breakpoints)
@@ -161,26 +152,30 @@ function setSeed(seed) {
   document.getElementById('seed-value').textContent = '#' + String(seed).padStart(2, '0');
 }
 
+// Mark one button in a radio-style group as chosen
+function selectInGroup(buttons, isChosen) {
+  buttons.forEach(function(btn) {
+    const chosen = isChosen(btn);
+    btn.classList.toggle('is-active', chosen);
+    btn.setAttribute('aria-checked', chosen ? 'true' : 'false');
+  });
+}
+
 function setOccasion(occasion) {
   currentOcc = occasion;
-  document.querySelectorAll('.occasion-btn').forEach(function(btn) {
-    const isActive = btn.dataset.occasion === occasion;
-    btn.classList.toggle('is-active', isActive);
-    btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+  const buttons = document.querySelectorAll('.occasion-btn');
+  selectInGroup(buttons, function(btn) { return btn.dataset.occasion === occasion; });
 
-    // Repeat the chosen occasion's tagline under the grid
-    if (isActive) {
-      document.getElementById('occasion-note').textContent =
-        btn.querySelector('.occasion-tagline').textContent;
+  // Repeat the chosen occasion's tagline under the grid
+  buttons.forEach(function(btn) {
+    if (btn.dataset.occasion === occasion) {
+      document.getElementById('occasion-note').textContent = btn.querySelector('.occasion-tagline').textContent;
     }
   });
 
-  // Show the marathon-only controls (run data, print size) — or hide them
+  // Show only this occasion's data fields (and the marathon style picker)
   document.querySelectorAll('[data-occasion-only]').forEach(function(el) {
     el.hidden = el.dataset.occasionOnly !== occasion;
-  });
-  document.querySelectorAll('[data-occasion-hide]').forEach(function(el) {
-    el.hidden = el.dataset.occasionHide === occasion;
   });
 }
 
@@ -196,6 +191,8 @@ function showToast(message) {
 
 /* --------------------------------------------------------------------------
    Compare 4 Variations
+   The four tiles REPLACE the single canvas in the canvas area. Choosing a tile
+   adopts its seed; Back, Escape or Shuffle leave without choosing.
    -------------------------------------------------------------------------- */
 function enterCompareMode() {
   isCompareMode = true;
@@ -257,7 +254,7 @@ function renderCompareGrid() {
 
   compareGraphics.forEach(function(pg, index) {
     const seed = index + 1;
-    paintCurrentDesign(pg, COMPARE_SIZE, seed);
+    paintDesign(pg, COMPARE_SIZE, currentDesign(seed));
     const tile = pg.elt.parentElement;
     tile.classList.toggle('is-current', seed === currentSeed);
     tile.setAttribute('aria-label', 'Choose variation ' + seed);
@@ -265,31 +262,10 @@ function renderCompareGrid() {
 }
 
 /* --------------------------------------------------------------------------
-   Export
+   Export — one print-ready SVG for every occasion
    -------------------------------------------------------------------------- */
-function exportHighResPng(name, date, place, occasion, seed) {
-  // Create an off-screen p5 Graphics object at print resolution
-  const pg = mainSketch.createGraphics(HI_RES, HI_RES);
-  pg.pixelDensity(1); // exactly 2400 × 2400, whatever the screen is
-
-  // Paint the full pattern onto pg at HI_RES scale
-  paintPattern(pg, HI_RES, name, date, place, occasion, seed);
-
-  // Save
-  const orderCode = generateOrderCode(name, date, place, occasion, seed);
-  pg.save('inky-' + orderCode + '-300dpi.png');
-  pg.remove();
-}
-
-function exportSvg(name, date, place, occasion, seed) {
-  const svg = buildPatternSvg(name, date, place, occasion, seed);
-  downloadSvg(svg, 'inky-' + generateOrderCode(name, date, place, occasion, seed) + '.svg');
-  showToast('SVG saved — outline the text before printing');
-}
-
-// Growth-engine print file: solid colour, text outlined (fonts load on demand)
-function exportGrowthSvg() {
-  const design = currentGrowthDesign(currentSeed);
+function exportPrintFile() {
+  const design = currentDesign(currentSeed);
   const orderCode = currentOrderCode();
   showToast('Preparing print file…');
   buildDesignSvg(design, { orderCode: orderCode }).then(function(result) {
@@ -335,17 +311,49 @@ function copyText(text) {
    Wire up inputs
    -------------------------------------------------------------------------- */
 function wireInputs() {
-  // Text fields → debounced redraw
-  const textFields = [
+  // Name, date, place → debounced redraw
+  const detailFields = [
     { id: 'input-name',  apply: function(v) { currentName  = v; } },
     { id: 'input-date',  apply: function(v) { currentDate  = v; } },
     { id: 'input-place', apply: function(v) { currentPlace = v; } }
   ];
-  textFields.forEach(function(field) {
+  detailFields.forEach(function(field) {
     document.getElementById(field.id).addEventListener('input', function(event) {
       field.apply(event.target.value);
       if (field.id === 'input-name') updateNameDependentUi();
       scheduleRedraw();
+    });
+  });
+
+  // Occasion-specific data fields: [input id, occasion, key in occasionData]
+  const dataFields = [
+    ['input-years', 'wedding', 'years'], ['input-guests', 'wedding', 'guests'],
+    ['input-age', 'birthday', 'age'],
+    ['input-time', 'marathon', 'finishTime'], ['input-splits', 'marathon', 'splits'],
+    ['input-us', 'match', 'us'], ['input-them', 'match', 'them']
+  ];
+  dataFields.forEach(function(field) {
+    document.getElementById(field[0]).addEventListener('input', function(event) {
+      occasionData[field[1]][field[2]] = event.target.value;
+      scheduleRedraw();
+    });
+  });
+
+  // Marathon distance: number field + preset chips
+  const distanceInput = document.getElementById('input-distance');
+  const setDistance = function(value) {
+    const km = parseFloat(value);
+    occasionData.marathon.distanceKm = km > 0 ? km : null;
+  };
+  distanceInput.addEventListener('input', function() {
+    setDistance(distanceInput.value);
+    scheduleRedraw();
+  });
+  document.querySelectorAll('.chip[data-km]').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      distanceInput.value = chip.dataset.km;
+      setDistance(chip.dataset.km);
+      triggerRedraw();
     });
   });
 
@@ -357,9 +365,30 @@ function wireInputs() {
     });
   });
 
-  // Seed slider — the number updates instantly, the canvas follows
+  // Marathon style
+  const styleButtons = document.querySelectorAll('.style-btn');
+  styleButtons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      currentStyle = btn.dataset.style;
+      selectInGroup(styleButtons, function(other) { return other === btn; });
+      triggerRedraw();
+    });
+  });
+
+  // Sliders — the number updates instantly, the canvas follows
   document.getElementById('input-seed').addEventListener('input', function(event) {
     setSeed(parseInt(event.target.value, 10));
+    triggerRedraw();
+  });
+  document.getElementById('input-feeling').addEventListener('input', function(event) {
+    currentFeeling = parseInt(event.target.value, 10);
+    document.getElementById('feeling-value').textContent = event.target.value;
+    triggerRedraw();
+  });
+
+  // Print size changes the preview too: minimum line widths are real
+  document.getElementById('input-product').addEventListener('change', function(event) {
+    currentProduct = event.target.value;
     triggerRedraw();
   });
 
@@ -386,76 +415,7 @@ function wireInputs() {
       .catch(function() { showToast('Select the code and copy it by hand'); });
   });
 
-  document.getElementById('btn-png').addEventListener('click', function() {
-    showToast('Rendering 2400 × 2400 px…');
-    // Let the toast paint before the heavy render blocks the page
-    setTimeout(function() {
-      exportHighResPng(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
-    }, 50);
-  });
-
-  document.getElementById('btn-svg').addEventListener('click', function() {
-    if (usesGrowthEngine()) exportGrowthSvg();
-    else exportSvg(patternName(), currentDate, currentPlace, currentOcc, currentSeed);
-  });
-
-  wireRunInputs();
-}
-
-// Marathon run data, style + print size
-function wireRunInputs() {
-  document.querySelectorAll('.style-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      currentStyle = btn.dataset.style;
-      document.querySelectorAll('.style-btn').forEach(function(other) {
-        const isActive = other === btn;
-        other.classList.toggle('is-active', isActive);
-        other.setAttribute('aria-checked', isActive ? 'true' : 'false');
-      });
-      triggerRedraw();
-    });
-  });
-
-  const distanceInput = document.getElementById('input-distance');
-  const setDistance = function(value) {
-    const km = parseFloat(value);
-    currentRun.distanceKm = km > 0 ? km : null;
-  };
-  distanceInput.addEventListener('input', function() {
-    setDistance(distanceInput.value);
-    scheduleRedraw();
-  });
-
-  // Preset chips fill the distance field
-  document.querySelectorAll('.chip[data-km]').forEach(function(chip) {
-    chip.addEventListener('click', function() {
-      distanceInput.value = chip.dataset.km;
-      setDistance(chip.dataset.km);
-      triggerRedraw();
-    });
-  });
-
-  document.getElementById('input-time').addEventListener('input', function(event) {
-    currentRun.finishTime = event.target.value;
-    scheduleRedraw();
-  });
-  document.getElementById('input-splits').addEventListener('input', function(event) {
-    currentRun.splits = event.target.value;
-    scheduleRedraw();
-  });
-
-  // Feeling slider: instant, like the seed slider
-  document.getElementById('input-feeling').addEventListener('input', function(event) {
-    currentRun.intensity = parseInt(event.target.value, 10);
-    document.getElementById('feeling-value').textContent = event.target.value;
-    triggerRedraw();
-  });
-
-  // Print size changes the preview too: minimum line widths are real
-  document.getElementById('input-product').addEventListener('change', function(event) {
-    currentProduct = event.target.value;
-    triggerRedraw();
-  });
+  document.getElementById('btn-svg').addEventListener('click', exportPrintFile);
 }
 
 // Read the starting values from the HTML so they always match
@@ -463,6 +423,7 @@ function readInitialValues() {
   currentName  = document.getElementById('input-name').value;
   currentDate  = document.getElementById('input-date').value;
   currentPlace = document.getElementById('input-place').value;
+  currentFeeling = parseInt(document.getElementById('input-feeling').value, 10);
   setSeed(parseInt(document.getElementById('input-seed').value, 10));
   setOccasion(currentOcc);   // sync the occasion-specific controls
 }

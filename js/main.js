@@ -66,55 +66,59 @@ function setupScrollReveal() {
 }
 
 /* --------------------------------------------------------------------------
-   Hero demo canvas — a marathon design for "Aoife" GROWING from the start
-   line to the finish: a leaf pair (or a ray) for every kilometre, the
-   laurel filling in with time. Then it holds, and the next one grows,
-   alternating the two styles. Not interactive.
-   Uses the growth engine in growth.js; colours never change.
+   Hero demo canvas — one design GROWING from nothing to full, then the next
+   occasion: a marathon in laurel sprigs, a wedding, a marathon medallion,
+   a birthday, a match. Uses the growth engine in growth.js; colours never
+   change. Not interactive.
    -------------------------------------------------------------------------- */
-const HERO_NAME     = 'Aoife';
+const HERO_SIZE     = 380;    // px, square
+const HERO_GROW_MS  = 3200;   // nothing → full
+const HERO_HOLD_MS  = 1600;   // admire the finished design
+const HERO_FADE_MS  = 600;    // dissolve into the next one
 const HERO_DATE     = '12.06.2027';
 const HERO_PLACE    = 'Dundalk';
-const HERO_SIZE     = 380;    // px, square
-const HERO_GROW_MS  = 3200;   // start line → finish
-const HERO_HOLD_MS  = 1600;   // admire the finished design
-const HERO_FADE_MS  = 600;    // dissolve into the next variation
-// Each loop: which variation and which style
-const HERO_CYCLES   = [
-  { seed: 1, style: 'sprigs' },
-  { seed: 1, style: 'medallion' },
-  { seed: 2, style: 'sprigs' },
-  { seed: 3, style: 'medallion' }
-];
 // A believable race: steady start, slower middle miles, strong finish
 const HERO_SPLITS   = '5:05 5:00 5:02 5:08 5:15 5:22 5:30 5:41 5:35 5:20 5:05 4:50';
-const HERO_PACE_MIN_PER_KM = 5.25;
 
-// Run data at a given growth stage (0 = start line, 1 = finish)
-function heroRunAt(progress) {
-  const km = 42.195 * progress;
-  const totalSeconds = Math.round(km * HERO_PACE_MIN_PER_KM * 60);
+function formatClock(totalSeconds) {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
-  const sec = totalSeconds % 60;
-  return {
-    distanceKm: km > 0.2 ? km : null,
-    finishTime: totalSeconds > 0 ? h + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0') : '',
-    splits: HERO_SPLITS,
-    intensity: 7
-  };
+  const s = totalSeconds % 60;
+  return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
+// Each cycle: who, which occasion, and its data at growth stage p (0 → 1)
+const HERO_CYCLES = [
+  { name: 'Aoife', occasion: 'marathon', style: 'sprigs', data: function(p) {
+      const km = 42.195 * p;
+      return { distanceKm: km > 0.2 ? km : null, finishTime: p > 0 ? formatClock(Math.round(km * 315)) : '', splits: HERO_SPLITS, intensity: 7 };
+    } },
+  { name: 'Aoife & Ciarán', occasion: 'wedding', data: function(p) {
+      return { years: Math.round(30 * p), guests: Math.round(160 * p), intensity: 6 };
+    } },
+  { name: 'Aoife', occasion: 'marathon', style: 'medallion', data: function(p) {
+      const km = 42.195 * p;
+      return { distanceKm: km > 0.2 ? km : null, finishTime: p > 0 ? formatClock(Math.round(km * 315)) : '', splits: HERO_SPLITS, intensity: 7 };
+    } },
+  { name: 'Saoirse', occasion: 'birthday', data: function(p) {
+      return { age: Math.max(1, Math.round(44 * p)), intensity: 7 };
+    } },
+  { name: 'Dundalk GAA', occasion: 'match', data: function(p) {
+      return { us: String(Math.round(23 * p)), them: String(Math.round(15 * p)), intensity: 8 };
+    } }
+];
+
 function heroDesign(cycle, progress) {
-  return buildMarathonDesign({
-    name: HERO_NAME, date: HERO_DATE, place: HERO_PLACE,
-    seed: cycle.seed, style: cycle.style, run: heroRunAt(progress), product: 'tote'
+  return buildDesign({
+    occasion: cycle.occasion, style: cycle.style,
+    name: cycle.name, date: HERO_DATE, place: HERO_PLACE,
+    seed: 1, data: cycle.data(progress), product: 'tote'
   });
 }
 
 function setupHeroCanvas() {
   const holder = document.getElementById('hero-canvas');
-  if (!holder || typeof p5 === 'undefined' || typeof buildMarathonDesign === 'undefined') return;
+  if (!holder || typeof p5 === 'undefined' || typeof buildDesign === 'undefined') return;
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

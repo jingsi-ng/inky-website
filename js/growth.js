@@ -1,5 +1,5 @@
 /* ==========================================================================
-   inky (印纪) — Growth engine (v1: marathon)
+   inky (印纪) — Growth engine (all four occasions)
    --------------------------------------------------------------------------
    A pattern that GROWS with the data instead of being re-rolled by it.
 
@@ -7,11 +7,16 @@
      the SEED decides what the pattern looks like  (skeleton)
      the DATA decides how much of it has grown     (growth)
 
-   Two styles share the same data:
+   Marathon has two styles sharing the same data:
      A · Laurel sprigs  one leaf pair per km on fixed sprigs; more km = more
                         sprigs, never tighter spacing
      B · Medallion      one ray per km around a centre seal, inside a laurel
                         ring that grows with finish time
+   Wedding   two laurel branches from a bow around the initials; a leaf pair
+             per year together, blossoms for guests
+   Birthday  one flower: a ring of petals per decade, a leaf per extra year
+   Match     twin stars sized by each side's score, an arch of small stars
+             (one per point), laurel underneath for how it felt
 
    - buildMarathonSkeleton(seedKey)  identity only: name, date, place, seed no.
    - normaliseRunData(raw)           raw run data → 0..1 values
@@ -496,9 +501,319 @@ function leafOutline(x, y, length, width, angle) {
 }
 
 /* --------------------------------------------------------------------------
-   7. Text block — name, a short rule, date · place, run stats
+   7. Wedding, birthday, match — same rule: seed = shape, data = growth
+   -------------------------------------------------------------------------- */
+
+// "12", " 120 " → number, or null
+function parseCount(value, max) {
+  const n = parseFloat(String(value === undefined || value === null ? '' : value).trim());
+  return isNaN(n) || n < 0 ? null : Math.min(n, max);
+}
+
+// GAA "2-14" (goals-points, a goal = 3 points) or a plain "20" → { total, label }
+function parseScore(text) {
+  const clean = String(text || '').trim();
+  if (!clean) return null;
+  const gaa = clean.match(/^(\d{1,2})\s*[-–:]\s*(\d{1,2})$/);
+  if (gaa) {
+    const goals = Number(gaa[1]), points = Number(gaa[2]);
+    return { total: goals * 3 + points, label: goals + '-' + points };
+  }
+  const plain = Number(clean);
+  return isNaN(plain) || plain < 0 ? null : { total: Math.min(plain, 99), label: String(plain) };
+}
+
+function normaliseFeeling(raw) {
+  return clamp01((raw.intensity === undefined ? 5 : raw.intensity) / 10);
+}
+
+// Small five-petal blossom with a little centre, as fill shapes
+function addBlossom(shapes, x, y, size, rotation, print) {
+  for (let i = 0; i < 5; i++) {
+    const angle = rotation + (i / 5) * Math.PI * 2;
+    shapes.push({ kind: 'fill', colour: 'terracotta',
+      points: leafOutline(x, y, size, Math.max(size * 0.62, print.minLine * 2), angle) });
+  }
+  shapes.push({ kind: 'dot', colour: 'ink', x: x, y: y, r: Math.max(size * 0.16, print.minDot) });
+}
+
+// A sparkle star: `points` long rays with short notches between them
+function starOutline(cx, cy, radius, points, inner, rotation) {
+  const outline = [];
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? radius : radius * inner;
+    const a = rotation + (i / (points * 2)) * Math.PI * 2;
+    outline.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+  }
+  return outline;
+}
+
+// --- Wedding: two laurel branches rising from a bow around the couple's initials
+// One leaf pair per year together, alternating left / right, at fixed places.
+// At 30 years the two branches meet at the top. Guests add small blossoms there.
+const WEDDING = { cx: 500, cy: 430, r: 300, slotsPerSide: 15, maxYears: 30, maxBlossoms: 8 };
+
+function makeWeddingSkeleton(rng) {
+  return {
+    leafScale: Array.from({ length: WEDDING.slotsPerSide * 2 }, function() { return rngRange(rng, 0.9, 1.1); }),
+    outerColourFirst: rng() < 0.5,
+    lean: rngRange(rng, 0.48, 0.78),          // how far leaves splay from the stem
+    squash: rngRange(rng, 0.9, 1.06),          // rounder or taller wreath
+    // Blossoms gather around the bow, working outward along the branches
+    blossoms: Array.from({ length: WEDDING.maxBlossoms }, function(_, i) {
+      const side = i % 2 === 0 ? -1 : 1;
+      return {
+        angle: Math.PI / 2 + side * (0.2 + Math.floor(i / 2) * 0.13) + rngRange(rng, -0.03, 0.03),
+        radius: WEDDING.r + (i % 4 < 2 ? -22 : 20) + rngRange(rng, -5, 5),
+        size: rngRange(rng, 14, 19),
+        rotation: rng() * Math.PI
+      };
+    })
+  };
+}
+
+function normaliseWeddingData(raw) {
+  return { years: parseCount(raw.years, 75), guests: parseCount(raw.guests, 1000), intensity: normaliseFeeling(raw) };
+}
+
+function growWedding(skeleton, data, print) {
+  const shapes = [];
+  const W = WEDDING;
+  const years = data.years === null ? 3 : Math.max(1, Math.min(W.maxYears, Math.round(data.years)));
+  const sizeBoost = 0.9 + 0.25 * data.intensity;
+  const span = Math.PI - 0.22;                       // bottom → top, a hair short of meeting
+  const thetaAt = function(side, u) { return Math.PI / 2 + side * (0.12 + u * span); };
+  const pointAt = function(theta) { return [W.cx + W.r * Math.cos(theta), W.cy + W.r * skeleton.squash * Math.sin(theta)]; };
+
+  [1, -1].forEach(function(side, sideIndex) {
+    // year y lives on side (y % 2), at slot floor(y / 2) — so years only ever add
+    const onThisSide = Math.floor(years / 2) + (sideIndex === 0 ? years % 2 : 0);
+    if (!onThisSide) return;
+    const end = (onThisSide - 0.4) / W.slotsPerSide + (onThisSide >= W.slotsPerSide ? 0.4 / W.slotsPerSide : 0.03);
+    const stem = [];
+    for (let i = 0; i <= 48; i++) stem.push(pointAt(thetaAt(side, Math.min(1, end) * i / 48)));
+    shapes.push({ kind: 'line', colour: 'ink', width: Math.max(2.6, print.minLine), points: stem });
+
+    for (let slot = 0; slot < onThisSide; slot++) {
+      const theta = thetaAt(side, (slot + 0.6) / W.slotsPerSide);
+      const base = pointAt(theta);
+      const up = theta + side * Math.PI / 2;
+      const length = 36 * skeleton.leafScale[sideIndex * W.slotsPerSide + slot] * sizeBoost;
+      const width = Math.max(length * 0.36, print.minLine * 2);
+      const outerFirst = (slot % 2 === 0) === skeleton.outerColourFirst;
+      // one leaf leaning out, one leaning in
+      shapes.push({ kind: 'fill', colour: outerFirst ? 'terracotta' : 'ink',
+        points: leafOutline(base[0], base[1], length, width, up - side * skeleton.lean) });
+      shapes.push({ kind: 'fill', colour: outerFirst ? 'ink' : 'terracotta',
+        points: leafOutline(base[0], base[1], length * 0.9, width, up + side * skeleton.lean) });
+    }
+  });
+
+  // The bow that ties the two branches
+  const bowX = W.cx, bowY = W.cy + W.r * skeleton.squash + 8;
+  const bowWidth = Math.max(12, print.minLine * 2);
+  shapes.push({ kind: 'fill', colour: 'terracotta', points: leafOutline(bowX, bowY, 38, bowWidth * 1.4, Math.PI + 0.35) });
+  shapes.push({ kind: 'fill', colour: 'terracotta', points: leafOutline(bowX, bowY, 38, bowWidth * 1.4, -0.35) });
+  shapes.push({ kind: 'line', colour: 'terracotta', width: Math.max(3, print.minLine), points: [[bowX, bowY], [bowX - 18, bowY + 40]] });
+  shapes.push({ kind: 'line', colour: 'terracotta', width: Math.max(3, print.minLine), points: [[bowX, bowY], [bowX + 18, bowY + 40]] });
+  shapes.push({ kind: 'dot', colour: 'ink', x: bowX, y: bowY, r: Math.max(6, print.minDot) });
+
+  // Guests → blossoms gathered at the bow (one per 25 guests)
+  const blossomCount = data.guests ? Math.min(W.maxBlossoms, Math.round(data.guests / 25)) : 0;
+  skeleton.blossoms.slice(0, blossomCount).forEach(function(b) {
+    addBlossom(shapes, W.cx + b.radius * Math.cos(b.angle), W.cy + b.radius * skeleton.squash * Math.sin(b.angle),
+      b.size * sizeBoost, b.rotation, print);
+  });
+  return shapes;
+}
+
+// "Aoife & Ciarán" → ["A", "C"]; "Aoife" → ["A"]
+function initialsFrom(name) {
+  return removeAccents(name)
+    .split(/\s*(?:&|\+|\band\b)\s*/i)
+    .map(function(part) { return part.trim(); })
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(function(part) { return part[0].toUpperCase(); });
+}
+
+function weddingMonogram(name) {
+  const letters = initialsFrom(name || 'inky');
+  if (letters.length < 2) {
+    return [{ role: 'monogram', text: letters[0] || 'I', font: 'serif', size: 150,
+      x: WEDDING.cx, y: WEDDING.cy + 52, align: 'center', valign: 'baseline', colour: 'ink' }];
+  }
+  return [
+    { role: 'monogram', text: letters[0], font: 'serif', size: 128, x: WEDDING.cx - 52, y: WEDDING.cy + 44, align: 'right', valign: 'baseline', colour: 'ink' },
+    { role: 'monogram', text: '&', font: 'serif', size: 80, x: WEDDING.cx, y: WEDDING.cy + 34, align: 'center', valign: 'baseline', colour: 'terracotta' },
+    { role: 'monogram', text: letters[1], font: 'serif', size: 128, x: WEDDING.cx + 52, y: WEDDING.cy + 44, align: 'left', valign: 'baseline', colour: 'ink' }
+  ];
+}
+
+function weddingStats(data) {
+  const parts = [];
+  if (data.years !== null) parts.push(Math.round(data.years) + (Math.round(data.years) === 1 ? ' YEAR' : ' YEARS') + ' TOGETHER');
+  if (data.guests) parts.push(Math.round(data.guests) + ' GUESTS');
+  return parts.join(' · ');
+}
+
+// --- Birthday: one flower that gains a ring of petals per decade -------------
+// Years past the last full decade become leaves at the foot of the stem.
+const BIRTHDAY = { cx: 500, cy: 380, stemBottom: 775, ringStep: 30, coreR: 20, maxRings: 7 };
+
+function makeBirthdaySkeleton(rng) {
+  return {
+    rings: Array.from({ length: BIRTHDAY.maxRings }, function(_, k) {
+      return { petals: 8 + 3 * k, rotation: rng() * Math.PI * 2, lengthScale: rngRange(rng, 0.92, 1.08) };
+    }),
+    stemSway: rngRange(rng, -26, 26),
+    leaves: Array.from({ length: 9 }, function(_, i) {
+      return { side: i % 2 === 0 ? -1 : 1, scale: rngRange(rng, 0.9, 1.12) };
+    })
+  };
+}
+
+function normaliseBirthdayData(raw) {
+  return { age: parseCount(raw.age, 120), intensity: normaliseFeeling(raw) };
+}
+
+function growBirthday(skeleton, data, print) {
+  const shapes = [];
+  const B = BIRTHDAY;
+  const age = data.age === null ? 1 : Math.max(1, Math.round(data.age));
+  const rings = Math.min(B.maxRings, 1 + Math.floor(age / 10));
+  const leaves = age % 10;
+  const petalWidth = 0.42 + 0.2 * data.intensity;           // a bigger day, rounder petals
+  // Every tenth year the nine leaves at the foot become a new ring of petals —
+  // the one place where growth transforms rather than simply adds.
+
+  // Stem: from the flower's centre (hidden under the petals) to the ground,
+  // with a gentle sway. Its shape never depends on the data, so leaves stay put.
+  const stem = [];
+  for (let i = 0; i <= 30; i++) {
+    const t = i / 30;
+    stem.push([B.cx + skeleton.stemSway * Math.sin(t * Math.PI), lerp(B.cy, B.stemBottom, t)]);
+  }
+  shapes.push({ kind: 'line', colour: 'ink', width: Math.max(3, print.minLine), points: stem });
+
+  // One leaf per year past the decade, climbing from the ground up
+  const upward = stem.slice().reverse();
+  const upwardLengths = cumulativeLengths(upward);
+  for (let i = 0; i < leaves; i++) {
+    const slot = skeleton.leaves[i];
+    const at = pointAtLength(upward, upwardLengths, 24 + i * 22);
+    const length = 50 * slot.scale * (0.9 + 0.25 * data.intensity);   // a bigger day, fuller leaves
+    shapes.push({ kind: 'fill', colour: i % 3 === 2 ? 'terracotta' : 'ink',
+      points: leafOutline(at.x, at.y, length, Math.max(length * 0.36, print.minLine * 2),
+        -Math.PI / 2 + slot.side * 1.05) });
+  }
+
+  // Petal rings, outermost first so inner rings sit on top
+  for (let k = rings - 1; k >= 0; k--) {
+    const ring = skeleton.rings[k];
+    const start = B.coreR + k * B.ringStep * 0.55;
+    const length = (B.ringStep * 1.6 + k * 4) * ring.lengthScale;
+    const colour = k % 3 === 1 ? 'ink' : 'terracotta';      // mostly terracotta, an ink ring now and then
+    for (let i = 0; i < ring.petals; i++) {
+      const angle = ring.rotation + (i / ring.petals) * Math.PI * 2;
+      shapes.push({ kind: 'fill', colour: colour,
+        points: leafOutline(B.cx + Math.cos(angle) * start, B.cy + Math.sin(angle) * start,
+          length, Math.max(length * petalWidth, print.minLine * 2), angle) });
+    }
+  }
+  shapes.push({ kind: 'dot', colour: 'ink', x: B.cx, y: B.cy, r: B.coreR + 2 });
+
+  return shapes;
+}
+
+function birthdayStats(data) {
+  return data.age === null ? '' : Math.round(data.age) + (Math.round(data.age) === 1 ? ' YEAR' : ' YEARS');
+}
+
+// --- Match / GAA: twin stars, one per side, under an arch of small stars ----
+// Each side's star grows with its score; every point scored adds a small star
+// to that side of the arch. A laurel underneath grows with how it felt.
+const MATCH = { leftX: 345, rightX: 655, y: 440, archR: 360, archCy: 470, slotsPerSide: 24, maxLeaves: 8 };
+
+function makeMatchSkeleton(rng) {
+  return {
+    bigRotation: rngRange(rng, -0.12, 0.12),
+    sharpness: rngRange(rng, 0.26, 0.42),     // inner radius of the twin stars
+    archR: rngRange(rng, 330, 395),           // how high the arch of points rises
+    laurelLift: rngRange(rng, 35, 85),        // curve of the laurel underneath
+    sparkles: Array.from({ length: MATCH.slotsPerSide * 2 }, function() {
+      return { scale: rngRange(rng, 0.85, 1.15), rotation: rngRange(rng, -0.3, 0.3), wobble: rngRange(rng, -4, 4) };
+    }),
+    leafScale: Array.from({ length: MATCH.maxLeaves * 2 }, function() { return rngRange(rng, 0.9, 1.1); })
+  };
+}
+
+function normaliseMatchData(raw) {
+  return { us: parseScore(raw.us), them: parseScore(raw.them), intensity: normaliseFeeling(raw) };
+}
+
+function growMatch(skeleton, data, print) {
+  const shapes = [];
+  const M = MATCH;
+  const sizeBoost = 0.9 + 0.2 * data.intensity;
+
+  // Arch of small stars: our points climb the left half, theirs the right
+  [{ score: data.us, side: -1, colour: 'terracotta', offset: 0 },
+   { score: data.them, side: 1, colour: 'ink', offset: M.slotsPerSide }].forEach(function(team) {
+    const count = team.score ? Math.min(M.slotsPerSide, team.score.total) : 0;
+    for (let i = 0; i < count; i++) {
+      const slot = skeleton.sparkles[team.offset + i];
+      // from the side (level with the stars) up toward the top, evenly spaced
+      const angle = -Math.PI / 2 + team.side * (Math.PI * 0.5 - (i / M.slotsPerSide) * Math.PI * 0.44);
+      const r = skeleton.archR + slot.wobble;
+      const size = 13 * slot.scale * sizeBoost;
+      shapes.push({ kind: 'fill', colour: team.colour,
+        points: starOutline(500 + Math.cos(angle) * r, M.archCy + Math.sin(angle) * r,
+          Math.max(size, print.minLine * 2), 4, 0.38, slot.rotation) });
+    }
+  });
+
+  // The twins: a thin line joins them, then the two big stars
+  const radiusFor = function(score) { return 85 + 2.2 * Math.min(score ? score.total : 0, 30); };
+  const usR = radiusFor(data.us), themR = radiusFor(data.them);
+  shapes.push({ kind: 'line', colour: 'ink', width: Math.max(2, print.minLine),
+    points: [[M.leftX, M.y], [M.rightX, M.y]] });
+  shapes.push({ kind: 'fill', colour: 'terracotta', points: starOutline(M.leftX, M.y, usR, 4, skeleton.sharpness, -Math.PI / 2 + skeleton.bigRotation) });
+  shapes.push({ kind: 'fill', colour: 'ink', points: starOutline(M.rightX, M.y, themR, 4, skeleton.sharpness, -Math.PI / 2 - skeleton.bigRotation) });
+
+  // Laurel underneath, two short branches from the middle
+  const leaves = Math.round(lerp(2, M.maxLeaves, data.intensity));
+  [-1, 1].forEach(function(side, sideIndex) {
+    const stem = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24;
+      stem.push([500 + side * (10 + t * 230), 690 - Math.sin(t * Math.PI * 0.55) * skeleton.laurelLift]);
+    }
+    const reach = (leaves + 0.5) / (M.maxLeaves + 0.5);
+    const lengths = cumulativeLengths(stem);
+    const shown = polylineUpTo(stem, lengths, lengths[lengths.length - 1] * reach);
+    shapes.push({ kind: 'line', colour: 'ink', width: Math.max(2.4, print.minLine), points: shown });
+    for (let i = 0; i < leaves; i++) {
+      const at = pointAtLength(stem, lengths, lengths[lengths.length - 1] * (i + 0.7) / (M.maxLeaves + 0.5));
+      const length = 32 * skeleton.leafScale[sideIndex * M.maxLeaves + i] * sizeBoost;
+      [-1, 1].forEach(function(lean) {
+        shapes.push({ kind: 'fill', colour: 'terracotta',
+          points: leafOutline(at.x, at.y, length, Math.max(length * 0.36, print.minLine * 2), at.angle + lean * 0.62) });
+      });
+    }
+  });
+  return shapes;
+}
+
+function matchStats(data) {
+  if (!data.us && !data.them) return '';
+  return (data.us ? data.us.label : '–') + ' · ' + (data.them ? data.them.label : '–');
+}
+
+/* --------------------------------------------------------------------------
+   8. Text block — name, a short rule, date · place, stats
    Text smaller than PRINT_RULES.minTextMm on the chosen product is dropped
-   (the name always stays and shrinks to fit instead).
+   (the name and wedding monogram always stay).
    -------------------------------------------------------------------------- */
 function formatRunStats(run) {
   const parts = [];
@@ -513,13 +828,13 @@ function formatRunStats(run) {
   return parts.join(' · ');
 }
 
-function buildTextItems(details, run, print) {
+function buildTextItems(details, statsText, print) {
   const items = [
     { role: 'name', text: String(details.name || '').trim() || 'Your Name', font: 'serif',
       size: 92, x: 500, y: 885, align: 'center', valign: 'baseline', colour: 'ink', maxWidth: 860 },
     { role: 'subtitle', text: formatDatePlace(details.date, details.place).toUpperCase(), font: 'mono',
       size: 22, x: 500, y: 948, align: 'center', valign: 'baseline', colour: 'terracotta' },
-    { role: 'stats', text: formatRunStats(run), font: 'mono',
+    { role: 'stats', text: statsText, font: 'mono',
       size: 18, x: 500, y: 978, align: 'center', valign: 'baseline', colour: 'ink' }
   ];
   return items.filter(function(item) {
@@ -529,41 +844,81 @@ function buildTextItems(details, run, print) {
 }
 
 /* --------------------------------------------------------------------------
-   8. One call to build a whole design (data only)
+   9. One call to build any design (data only)
    -------------------------------------------------------------------------- */
 const MARATHON_STYLES = {
   sprigs:    { label: 'Laurel sprigs', code: 'A' },
   medallion: { label: 'Medallion',     code: 'B' }
 };
 
-// details = { name, date, place, seed, style, run: {distanceKm, finishTime, splits, intensity}, product }
-function buildMarathonDesign(details) {
-  const style = details.style in MARATHON_STYLES ? details.style : 'sprigs';
-  const seedKey = removeAccents(details.name).toUpperCase() + '::' + details.date + '::' +
-    details.place + '::marathon::' + details.seed;
-  const skeleton = buildMarathonSkeleton(seedKey);
-  const run = normaliseRunData(details.run || {});
-  const print = printContext(details.product);
+// Each occasion: how to read its data, grow it, describe it, and encode it
+const OCCASION_ENGINES = {
+  marathon: { normalise: normaliseRunData, stats: formatRunStats },   // grows via its two styles
+  wedding: {
+    normalise: normaliseWeddingData, skeleton: makeWeddingSkeleton, grow: growWedding, stats: weddingStats,
+    code: function(d) {
+      return ['Y' + (d.years === null ? 'X' : Math.round(d.years)), d.guests ? 'G' + Math.round(d.guests) : null,
+        'I' + Math.round(d.intensity * 10)].filter(Boolean).join('-');
+    }
+  },
+  birthday: {
+    normalise: normaliseBirthdayData, skeleton: makeBirthdaySkeleton, grow: growBirthday, stats: birthdayStats,
+    code: function(d) { return 'A' + (d.age === null ? 'X' : Math.round(d.age)) + '-I' + Math.round(d.intensity * 10); }
+  },
+  match: {
+    normalise: normaliseMatchData, skeleton: makeMatchSkeleton, grow: growMatch, stats: matchStats,
+    code: function(d) {
+      const s = function(score) { return score ? score.label.replace('-', '.') : 'X'; };
+      return 'S' + s(d.us) + 'V' + s(d.them) + '-I' + Math.round(d.intensity * 10);
+    }
+  }
+};
 
-  const shapes = style === 'medallion'
-    ? growMedallion(skeleton.medallion, run, print)
-    : growSprigs(skeleton.sprigs, run, print);
+// details = { occasion, name, date, place, seed, style (marathon), data: {…}, product }
+function buildDesign(details) {
+  const occasion = details.occasion in OCCASION_ENGINES ? details.occasion : 'wedding';
+  const engine = OCCASION_ENGINES[occasion];
+  const seedKey = removeAccents(details.name).toUpperCase() + '::' + details.date + '::' +
+    details.place + '::' + occasion + '::' + details.seed;
+  const data = engine.normalise(details.data || {});
+  const print = printContext(details.product);
+  let shapes, style = null;
+
+  if (occasion === 'marathon') {
+    style = details.style in MARATHON_STYLES ? details.style : 'sprigs';
+    const skeleton = buildMarathonSkeleton(seedKey);
+    shapes = style === 'medallion' ? growMedallion(skeleton.medallion, data, print) : growSprigs(skeleton.sprigs, data, print);
+  } else {
+    shapes = engine.grow(cachedSkeleton(seedKey, engine.skeleton), data, print);
+  }
 
   // Short terracotta rule between the name and the date line
   shapes.push({ kind: 'line', colour: 'terracotta', width: Math.max(2, print.minLine),
     points: [[430, 912], [570, 912]] });
 
-  return { style: style, shapes: shapes, texts: buildTextItems(details, run, print), run: run, print: print };
+  let texts = buildTextItems(details, engine.stats(data), print);
+  if (occasion === 'wedding') texts = weddingMonogram(details.name).concat(texts);
+
+  return { occasion: occasion, style: style, shapes: shapes, texts: texts, data: data, print: print };
 }
 
-// The part of the order code that only growth-engine designs carry,
-// e.g. "A-D422-T034120-I7-P…" (style letter first)
+function cachedSkeleton(seedKey, maker) {
+  if (!skeletonCache.has(seedKey)) {
+    if (skeletonCache.size > 12) skeletonCache.delete(skeletonCache.keys().next().value);
+    skeletonCache.set(seedKey, maker(createRng(hashString(seedKey))));
+  }
+  return skeletonCache.get(seedKey);
+}
+
+// The data part of the order code, e.g. marathon "A-D422-T034120-I7-P…",
+// wedding "Y12-G120-I7", birthday "A34-I6", match "S2.14V1.12-I8"
 function encodeDesignCode(design) {
-  return MARATHON_STYLES[design.style].code + '-' + encodeRunData(design.run);
+  if (design.occasion === 'marathon') return MARATHON_STYLES[design.style].code + '-' + encodeRunData(design.data);
+  return OCCASION_ENGINES[design.occasion].code(design.data);
 }
 
 /* --------------------------------------------------------------------------
-   9. Preview on a p5 canvas / p5.Graphics (screen only — not the print file)
+   10. Preview on a p5 canvas / p5.Graphics (screen only — not the print file)
    -------------------------------------------------------------------------- */
 function paintDesign(p, sizePx, design) {
   const k = sizePx / DESIGN_SIZE;
@@ -621,7 +976,7 @@ function paintText(p, item, k) {
 }
 
 /* --------------------------------------------------------------------------
-   10. Print file (SVG)
+   11. Print file (SVG)
    - Solid brand colours only, no transparency anywhere
    - Background on its own layer, so it can be dropped for cream stock
    - Text converted to outlines with opentype.js; if the fonts can't load

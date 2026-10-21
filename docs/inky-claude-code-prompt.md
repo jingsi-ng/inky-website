@@ -1,6 +1,6 @@
 # Claude Code Prompt: inky (印纪) — Full Website + Generative Pattern Tool
 
-> Version 5. Supersedes earlier versions. Where this document gives exact CSS,
+> Version 6. Supersedes earlier versions. Where this document gives exact CSS,
 > values or behaviour, use them as written — do not substitute your own taste.
 > Where something is listed under **Do not**, it is a hard rule.
 
@@ -36,8 +36,8 @@ inky/
 ├── about.html          Brand story, how it works, occasions, collection, contact
 ├── css/style.css       All styles, light + dark
 ├── js/main.js          Nav, scroll reveal, landing-page hero animation
-├── js/patterns.js      Brushstroke engine (wedding, birthday, match) + shared helpers
-├── js/growth.js        Growth engine (marathon): styles, print rules, print-ready SVG
+├── js/patterns.js      Shared helpers: hash, RNG, text clean-up, order code
+├── js/growth.js        Growth engine (all occasions): designs, print rules, print-ready SVG
 ├── js/generator.js     Generator page: p5 sketch, inputs, compare mode, export
 └── assets/             (placeholder for future product photos)
 ```
@@ -241,21 +241,24 @@ text without the underline. Footer links have no active state.
    The composition becomes an object you keep."; primary button `Create Your Design →`
    (generator.html) with a soft amber link `See how it works ↓` (#how) under it.
    Right: 380×380 canvas, 6px radius, bone border, `--shadow`, label
-   `live preview — enter your own name in the generator`. The canvas loops a **marathon
-   design for "Aoife" growing from 0 to 42.195 km** (3.2s grow, 1.6s hold, 0.6s dissolve),
-   alternating the two marathon styles (see §8). Colours never change. Stacks below 820px.
+   `live preview — enter your own name in the generator`. The canvas loops designs **growing
+   from nothing to full** (3.2s grow, 1.6s hold, 0.6s dissolve): marathon sprigs (Aoife),
+   wedding (Aoife & Ciarán, 0→30 years), marathon medallion, birthday (Saoirse, 1→44),
+   match (Dundalk GAA). Colours never change. Stacks below 820px.
 2. **Products** (`#products`, 1px bone rule above) — label `what we print`, h2
    `Things that last.`; 2×2 cards (1 column ≤640px), each with a 40px colour strip
    (cream `#f5ede0`, terracotta `#8c4a2a`, ink `#2a1e10`, bone `#d8cba8`), index `01`–`04`,
    name (20px bold), one sentence (15px), price (Courier Prime 13px amber):
    Tote Bag — "Your generated pattern, screen-printed. Reusable, sturdy, yours." — `€18 – 28`;
-   Acrylic Keychain — "Your name drawn as brushstrokes, UV-printed on 3mm acrylic." — `€8 – 14`;
+   Acrylic Keychain — "Your name and your pattern, UV-printed on 3mm acrylic." — `€8 – 14`;
    Coaster Set — "Four coasters. Four patterns generated from the same name." — `€22 – 35`;
    Event Package — "Custom merchandise for marathons, societies and clubs." — `Get a quote`.
 3. **How it works** (`#how`, `.section--bone`) — label `the process`, h2
    `How your design is made.`; three steps with faint vertical dividers; `01` rust 24px,
-   18px bold heading, italic sentence: Enter your details / The pattern generates /
-   Lock it with a code (copy from v4).
+   18px bold heading, italic sentence: Enter your details — "Name, date, place, occasion —
+   these become the seed for everything." / The pattern generates — "Your name sets the shape;
+   your details make it grow. No two look the same." / Lock it with a code — "Copy your order
+   code. Send it to us. We reproduce your exact design."
 4. **Quote** — centred, max 640px, italic 300 ~26px rust: "Names become patterns. Moments
    become objects. You become permanent." Caption label `— the idea behind every inky design`.
 5. **Footer** (§3.5).
@@ -297,12 +300,22 @@ falls back to the `inky` demo).
   `Medallion` / "a ray for every km".
 - **Your details** — Name (max 30, placeholder "e.g. Aoife & Ciarán"), Date (max 20,
   "e.g. 12.06.2027"), Place (max 24, "e.g. Dundalk"). 350ms debounce.
+- **Occasion data** — only the selected occasion's fieldset is shown (`data-occasion-only`):
+  - *your wedding*: years together (0–75), guests (optional). Hint: "A leaf pair for every year
+    together — at thirty the branches meet. Guests gather as blossoms by the bow."
+  - *the birthday*: age (0–120). Hint: "A ring of petals for every ten years, and a leaf for each
+    year since."
+  - *the score* (match): us / them, side by side, GAA `2-14` (goals-points, goal = 3) or a plain
+    number. Hint: "GAA scores (goals-points) or plain numbers. Each side's star grows with its
+    score; every point adds a small star."
 - **Your run** (marathon only) — distance km (number input + chips `5K` `10K` `Half`
   `Full` = 5 / 10 / 21.0975 / 42.195), finish time (`3:41:20`; two parts: first part under 10
-  = h:mm, else mm:ss), km splits (optional textarea, "5:12, 5:08 …" or decimal minutes),
-  "how it felt" slider 0–10 (default 5, value shown in rust). Hint: "The more you add, the
-  more it grows: every km adds a leaf pair (or a ray), your splits colour the faster ones,
-  and your time grows the laurel." Text fields debounce 350ms; sliders and chips redraw now.
+  = h:mm, else mm:ss), km splits (optional textarea, "5:12, 5:08 …" or decimal minutes).
+  Hint: "Every km adds a leaf pair (or a ray), your splits colour the faster ones, and your
+  time grows the laurel."
+- **How it felt** (every occasion) — slider 0–10, default 5, value in rust; hint "The bigger
+  the moment, the fuller the leaves and laurel." Text fields debounce 350ms; sliders and chips
+  redraw immediately.
 - **Design variation** — slider 1–99, value `#01` in Courier Prime rust; hint "Drag to explore
   different arrangements for the same name."
 - **Actions** — `Compare 4 Variations` (primary) and `Shuffle ↺` (secondary, random seed
@@ -310,10 +323,10 @@ falls back to the `inky` demo).
 - **Order code** — dashed-border box in rust Courier Prime + `Copy` button (clipboard, with an
   `execCommand` fallback) + hint "Share this code when ordering — we'll reproduce your exact
   design." A toast confirms the copy.
-- **Export** — marathon: print size select (Tote bag — 20 cm / Coaster — 9 cm /
-  Keychain — 5 cm) and `↓ SVG` only, hint "Print-ready SVG: two solid inks, text as outlines,
-  lines no thinner than 0.35 mm at the size you pick." Other occasions: `↓ PNG (300 DPI)`
-  (2400×2400 off-screen `createGraphics`, `pixelDensity(1)`) and `↓ SVG`.
+- **Export** (every occasion) — print size select (Tote bag — 20 cm / Coaster — 9 cm /
+  Keychain — 5 cm) and one button `↓ Print file (SVG)`, hint "Print-ready SVG: two solid inks,
+  text as outlines, lines no thinner than 0.35 mm at the size you pick." No PNG export: the
+  print file is always vector.
 
 Below the canvas: preview label `Name · Date · Place` (Courier Prime), or `inky · sample
 pattern` in the demo state.
@@ -329,7 +342,7 @@ pattern` in the demo state.
    `minmax(0, 200px)` columns, 16px gap, centred), then the hint "Tap a variation to choose
    it — it becomes your design. "Back" or Esc keeps the one you had."
 3. Tiles are `<button>`s holding a 200px canvas of the **current inputs** (occasion, style,
-   name, date, place, run data, print size) at **seeds 1, 2, 3, 4**, with a label
+   name, date, place, occasion data, feeling, print size) at **seeds 1, 2, 3, 4**, with a label
    `Variation #01` … `#04`. The tile matching the current seed has a rust border.
    Build the four `p5.Graphics` once and repaint them on later calls.
 4. While comparing, any input change repaints the tiles live.
@@ -353,15 +366,21 @@ Five sections, alternating cream / bone:
    `A name → becomes a pattern → becomes an object` as three bone-bordered Courier boxes with
    rust arrows (↓ arrows stacked on ≤640px).
 2. **How your design is made** (`.section--bone`, ink text — not dark) — 2×2 steps, rust
-   Courier `01`–`04` (32px), bold heading, one sentence (v4 copy).
+   Courier `01`–`04` (32px), bold heading, one sentence (v4 copy, except step 02 "The algorithm
+   runs": "Your name sets the shape — where every branch leans, where every ray starts. Then
+   your details grow it: a leaf for every year, a ray for every kilometre. No two names produce
+   the same composition.").
 3. **The occasions** (cream) — h2 "Four occasions. Four visual languages.", then one line
    "One palette for everything we print — terracotta, cream and ink. Each occasion grows its own
    shapes instead." with three swatch dots. Four cards (4 across, 2×2 ≤980px, 1 ≤460px): cream
    strip, icon, title (Wedding · Birthday · Marathon / Run · Match / Event), amber motif line
    (v4 copy), a faint flat SVG motif bottom-right at 15% opacity (3-leaf branch, 5-petal flower,
-   crown arc, 6-point star + two-dot constellation). The marathon card adds an italic line:
-   "Grows with your run: every km adds a leaf pair (or a ray), your faster stretches turn
-   terracotta, your time grows the laurel."
+   crown arc, 6-point star + two-dot constellation). Each card adds an italic "grows with" line:
+   wedding "Grows with your years together: a leaf pair for each one, and blossoms for your
+   guests."; birthday "Grows with each birthday: a ring of petals every ten years, a leaf for
+   every year since."; marathon "Grows with your run: every km adds a leaf pair (or a ray), your
+   faster stretches turn terracotta, your time grows the laurel."; match "Grows with the score:
+   each side's star with its points, a small star for every score."
 4. **The Metamorphoses Collection** (`.section--bone`) — eyebrow `COMING 2027`, bold italic
    heading, intro (v4 copy), four cream series cards (Daphne, Narcissus, Atalanta, Gemini — tags,
    descriptions, line-art motif in rust at 40%, `Coming 2027` badge). Four columns on desktop;
@@ -372,30 +391,48 @@ Five sections, alternating cream / bone:
 
 ---
 
-## 8. Pattern engines
+## 8. Pattern engine (`growth.js`)
 
-Both engines lay everything out in **normalised design units** and only scale at the end, so
-one design fits a 5 cm keychain or a 20 cm tote. Same inputs → same design, always
-(DJB2 `hashString` + LCG `createRng`, both as in v4). Seed key:
-`NAME_WITHOUT_ACCENTS_UPPER::date::place::occasion::seed`.
+Everything is laid out in a **1000 × 1000 design box** and only scaled at the end, so one
+design fits a 5 cm keychain or a 20 cm tote. Same inputs → same design, always (DJB2
+`hashString` + LCG `createRng`, both as in v4, in `patterns.js`). Seed key:
+`NAME_WITHOUT_ACCENTS_UPPER::date::place::occasion::seed`. One entry point:
+`buildDesign({ occasion, name, date, place, seed, style, data, product })` → `{ shapes, texts }`,
+painted by `paintDesign(p, size, design)` and written by `buildDesignSvg(design, meta)`.
 
-### 8.1 Brushstroke engine — wedding, birthday, match (`patterns.js`)
+### 8.1 The rule for every occasion
 
-Letter skeletons A–Z and `&` (normalised strokes); per letter, 6–12 short tapered brush
-marks along each stroke (±0.4 rad, 1.5–5% length, 0.8–4px, alpha 0.25–0.75) plus 4–8 stray
-marks; 4–7 faint motif shapes behind (wedding laurel/branch/leaf, birthday flower/petal/bloom,
-match star/constellation/orbit); 3–5 ruling lines; 2–3 seal rings; 8–15 accent marks plus 2–4
-tiny motif accents; name/date/corner text. **Brand print palette only. No paper-grain dot field.**
-Known gap: this engine still uses transparency, so its SVG is not yet print-grade. These
-occasions will move to the growth engine next (wedding: years together → rings, using the same
-"only ever add" rule).
+The *seed* decides what the pattern looks like (skeleton); the *data* decides how much of it has
+grown. Changing data never re-randomises anything, and a bigger number only ever **adds** marks
+at fixed places — it never moves or reshuffles existing ones. Element spacing is constant, so
+more data means fuller, never more crowded. The one deliberate exception is the birthday decade
+(nine foot-leaves become a new ring of petals at each tenth year). "How it felt" (0–10) scales
+leaves and laurel on every occasion. With no data yet, show a small "seedling" (e.g. 2 km, 3 years,
+age 1), never an empty canvas.
 
-### 8.2 Growth engine — marathon (`growth.js`)
+**Wedding** — two laurel branches rise from a terracotta bow at the bottom of a circle
+(centre (500, 430), r 300 × seeded squash 0.90–1.06) around the couple's **initials** ("Aoife &
+Ciarán" → `A & C`, Merriweather Bold 128 ink, `&` 80 terracotta; one name → one initial 150). One
+leaf pair per year together: year *y* goes to side *y mod 2*, slot ⌊y/2⌋ (15 slots per side); at
+30 years the branches meet at the top. Each pair has one terracotta and one ink leaf (alternating),
+seeded lean 0.48–0.78 rad. Guests → up to 8 small five-petal blossoms gathered at the bow (one per
+25 guests). Stats: `18 YEARS TOGETHER · 120 GUESTS`.
 
-**The rule:** the *seed* decides what the pattern looks like (skeleton); the *data* decides how
-much of it has grown. Changing run data never re-randomises anything, and a bigger number only
-ever **adds** marks — it never moves or reshuffles existing ones. Each layer uses its own
-random stream (`hashString(root + ':sprigs')`, `':medallion'`).
+**Birthday** — one flower on a fixed, seeded swaying stem from (500, 380) to (500, 775). A ring of
+petals per decade (`1 + ⌊age/10⌋`, max 7; ring *k* has `8 + 3k` petals, mostly terracotta with an
+ink ring every third), an ink centre; one leaf per year past the last decade at fixed places
+climbing the stem. Feeling → rounder petals, fuller leaves. Stats: `34 YEARS`.
+
+**Match / GAA** — twin four-point stars (Castor & Pollux) at (345, 440) terracotta = us and
+(655, 440) ink = them, joined by a thin ink line; each star's radius `85 + 2.2 × min(points, 30)`,
+seeded sharpness. An arch of small four-point stars above (seeded radius 330–395): one per point
+scored, ours climbing the left side, theirs the right (24 slots each). A short two-branch laurel
+underneath, `lerp(2, 8, feeling)` leaf pairs per side. Scores parse GAA `2-14` (goal = 3 points)
+or plain numbers. Stats: `2-14 · 1-12`.
+
+### 8.2 Marathon
+
+Each marathon style uses its own random stream (`hashString(root + ':sprigs')`, `':medallion'`).
 
 **Run data → 0..1:** distance km (≤100); finish minutes → `time = easeOut(min/360)`;
 splits resampled to 12 speeds (3:00/km = 1, 8:00/km = 0, quantised to 36 levels);
@@ -420,11 +457,11 @@ inner ring) at (500, 400). One tapered, round-tipped ray per km at fixed clock p
 else ink. Laurel ring r 335: two branches rising from the bottom, 15 leaves per side alternating
 in/out, shown up to `lerp(0.1, 1, time × (0.5 + 0.5·intensity))`.
 
-**Text block (both):** name Merriweather Bold 92 (shrinks to fit 860), baseline 885; short
+**Text block (every occasion):** name Merriweather Bold 92 (shrinks to fit 860), baseline 885; short
 terracotta rule 430–570 at 912; `DATE · PLACE` Courier 22 terracotta at 948; `42.2 KM · 3:41:20`
 Courier 18 ink at 978. No frames, no corner labels.
 
-**Do not** (growth engine): circles with radiating lines other than the medallion's own seal;
+**Do not** (every occasion): circles with radiating lines other than the medallion's own seal;
 scattered dots, rings or "cell-like" textures; contour lines or km tick marks; noise, glitch or
 distressed effects; gradients or transparency in anything printed.
 
@@ -445,10 +482,17 @@ and tell the user in the toast. No `opacity`, no gradients, three colours only.
 
 ### 8.3 Order codes
 
-Base (all occasions): `INK-{OC}-{NAME≤6}-{DIGITS≤8}-{PLACE≤3}-{SEED2}`, accents removed, e.g.
-`INK-WE-AOIFE-12062027-DUN-01`. Marathon appends `-{A|B}-D{km×10}-T{hhmmss}-I{0–10}-P{12 base-36
-pace chars}` (D/T/P only when given), e.g.
-`INK-MA-AOIFE-12062027-DUN-01-A-D422-T034120-I7-PKLLKJIIGHJKM`.
+Base: `INK-{OC}-{NAME≤6}-{DIGITS≤8}-{PLACE≤3}-{SEED2}`, accents removed, with occasion codes
+`WE` wedding, `BI` birthday, `MA` marathon, `MT` match (not `MA` — that collides). Then the data:
+
+| Occasion | Suffix | Example |
+| --- | --- | --- |
+| wedding | `Y{years}[-G{guests}]-I{feeling}` | `INK-WE-AOIFEC-12062027-DUN-01-Y18-G120-I5` |
+| birthday | `A{age}-I{feeling}` | `INK-BI-SAOIRS-12062027-DUN-01-A34-I5` |
+| marathon | `{A\|B}-D{km×10}-T{hhmmss}-I{feeling}[-P{12 pace chars}]` | `INK-MA-AOIFE-12062027-DUN-01-A-D422-T034120-I5` |
+| match | `S{us}V{them}-I{feeling}` (GAA `2-14` written `2.14`) | `INK-MT-DUNDAL-12062027-DUN-01-S2.14V1.12-I5` |
+
+Missing values are written `X`.
 
 ---
 
@@ -460,7 +504,9 @@ pace chars}` (D/T/P only when given), e.g.
 - Typing one letter hides the overlay; order code + export appear at two letters.
 - Compare: single canvas hidden, four tiles visible, Esc returns with the seed unchanged and
   focus on the Compare button; choosing tile 3 sets the slider to 3.
-- Marathon 10 km → 42.195 km: every leaf/ray present at 10 km is still present, unmoved, at 42 km.
-- Exported marathon SVG: valid XML, no `opacity`, no `<text>` (when fonts load), only
+- Growth only adds: wedding 2 → 30 years and marathon 10 → 42.195 km keep every earlier mark
+  in place (sprig tip leaves move outward as their sprig lengthens; the big match stars grow).
+- Every occasion exports SVG; there is no PNG button.
+- Exported SVG (any occasion): valid XML, no `opacity`, no `<text>` (when fonts load), only
   `#8c4a2a`, `#2a1e10`, `#f5ede0`; keychain export has no line under 7 units (0.35 mm).
 - No forbidden words on any page; no colour outside the palettes.
