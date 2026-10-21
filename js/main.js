@@ -91,14 +91,14 @@ function formatClock(totalSeconds) {
 const HERO_CYCLES = [
   { name: 'Aoife', occasion: 'marathon', style: 'sprigs', data: function(p) {
       const km = 42.195 * p;
-      return { distanceKm: km > 0.2 ? km : null, finishTime: p > 0 ? formatClock(Math.round(km * 315)) : '', splits: HERO_SPLITS, intensity: 7 };
+      return { distance: km > 0.2 ? String(km) : '', unit: 'km', finishTime: p > 0 ? formatClock(Math.round(km * 315)) : '', splits: HERO_SPLITS, intensity: 7 };
     } },
   { name: 'Aoife & Ciarán', occasion: 'wedding', data: function(p) {
       return { years: Math.round(30 * p), guests: Math.round(160 * p), intensity: 6 };
     } },
   { name: 'Aoife', occasion: 'marathon', style: 'medallion', data: function(p) {
       const km = 42.195 * p;
-      return { distanceKm: km > 0.2 ? km : null, finishTime: p > 0 ? formatClock(Math.round(km * 315)) : '', splits: HERO_SPLITS, intensity: 7 };
+      return { distance: km > 0.2 ? String(km) : '', unit: 'km', finishTime: p > 0 ? formatClock(Math.round(km * 315)) : '', splits: HERO_SPLITS, intensity: 7 };
     } },
   { name: 'Saoirse', occasion: 'birthday', data: function(p) {
       return { age: Math.max(1, Math.round(44 * p)), intensity: 7 };

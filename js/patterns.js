@@ -43,9 +43,13 @@ function rngRange(rng, min, max) {
    2. Text clean-up
    -------------------------------------------------------------------------- */
 
-// Strip Irish fadas and other accents so "Ciarán" → "Ciaran"
+// Letters that don't decompose into "base + accent"
+const LETTER_SWAPS = { 'ł': 'l', 'Ł': 'L', 'ø': 'o', 'Ø': 'O', 'đ': 'd', 'Đ': 'D', 'ß': 'ss', 'æ': 'ae', 'Æ': 'AE', 'œ': 'oe', 'Œ': 'OE', 'þ': 'th', 'Þ': 'Th' };
+
+// Strip Irish fadas and other accents so "Ciarán" → "Ciaran", "Łukasz" → "Lukasz"
 function removeAccents(str) {
-  return String(str || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u0142\u0141\u00f8\u00d8\u0111\u0110\u00df\u00e6\u00c6\u0153\u0152\u00fe\u00de]/g, function(ch) { return LETTER_SWAPS[ch]; });
 }
 
 // "12.06.2027 · Dundalk" — skips empty parts
@@ -64,18 +68,15 @@ function escapeXml(str) {
 }
 
 /* --------------------------------------------------------------------------
-   3. Order code — who / when / where / which variation.
-   The generator appends the data the design grew from (see growth.js,
-   encodeDesignCode), so the code alone rebuilds the exact design.
-   Example: INK-WE-AOIFE-12062027-DUN-01-Y8-G120-I5
+   3. Order code — short and readable: occasion, name, date, and a 5-character
+   check that ties it to the exact design key (see growth.js, section 13).
+   Example: INK-WE-AOIFEC-12062027-K7Q2M
    -------------------------------------------------------------------------- */
 const OCCASION_CODES = { wedding: 'WE', birthday: 'BI', marathon: 'MA', match: 'MT' };
 
-function generateOrderCode(name, date, place, occasion, seed) {
+function generateOrderCode(name, date, occasion, check) {
   const n  = removeAccents(name).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6) || 'INKY';
   const d  = String(date || '').replace(/[^0-9]/g, '').slice(0, 8) || '0';
-  const pl = removeAccents(place).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'X';
-  const oc = OCCASION_CODES[occasion] || occasion.slice(0, 2).toUpperCase();
-  const sv = String(seed).padStart(2, '0');
-  return `INK-${oc}-${n}-${d}-${pl}-${sv}`;
+  const oc = OCCASION_CODES[occasion] || String(occasion).slice(0, 2).toUpperCase();
+  return `INK-${oc}-${n}-${d}-${check}`;
 }

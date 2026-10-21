@@ -53,17 +53,23 @@ Two styles, same data:
   below 0.5 mm; text under 1.2 mm is dropped; the medallion thins to every other ray on small prints.
 - SVG export converts text to outlines with opentype.js (Merriweather Bold / Courier Prime WOFF
   from jsDelivr). If the fonts can't load it falls back to `<text>` with a PRINT NOTE.
-- Order codes append the data: wedding `-Y18-G120-I5`, birthday `-A34-I5`, marathon `-A-D422-T034120-I5`, match `-S2.14V1.12-I5` (match prefix is `MT`).
+- Order codes are short (`INK-WE-AOIFEC-12062027-6UAWN`) and end in a check tied to the **design
+  link** (`generator.html#design=…`), which carries every input and reopens the exact design.
+  The generator's "Email us this design" button sends both to the shop.
 
 Other occasions follow the same rule:
 
 | Occasion | Data → growth |
 | --- | --- |
-| Wedding | a leaf pair per year together on two branches rising from a bow around the initials (they meet at 30); guests → blossoms by the bow |
-| Birthday | a ring of petals per decade on one flower, a leaf per year since |
-| Match / GAA | each side's twin star grows with its score; an arch of small stars, one per point |
+| Wedding | the wedding day starts the wreath (8 pairs) around the initials; a pair per year together (they meet after 22); guests → blossoms by the bow |
+| Birthday | at least two petal rings, a new ring per decade, a leaf per year since |
+| Match / GAA | twin stars, always equal (win or lose); an arch of small stars, one per point; optional opponent and club colours |
 
-"How it felt" (0–10) fills out the leaves and laurel on every occasion. Every occasion exports
+"Fullness" (light ⟷ lush) fills out the leaves and laurel on every occasion. Every design can
+be printed on light fabric (on cream), on dark fabric (rust-light + cream, no background), or —
+for team orders — in club colours. Names in Latin, Latin Extended and Chinese all print as
+outlines; anything else is flagged while typing. Group orders download as a zip of print files
+plus a CSV of order codes. Every occasion exports
 the same print-ready SVG; there is no PNG export.
 
 The full build spec — including exact CSS, nav/active-state rules and compare-mode behaviour —

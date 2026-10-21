@@ -1,6 +1,6 @@
 # Claude Code Prompt: inky (印纪) — Full Website + Generative Pattern Tool
 
-> Version 6. Supersedes earlier versions. Where this document gives exact CSS,
+> Version 7. Supersedes earlier versions. Where this document gives exact CSS,
 > values or behaviour, use them as written — do not substitute your own taste.
 > Where something is listed under **Do not**, it is a hard rule.
 
@@ -15,16 +15,23 @@ studio in Dundalk. It does two jobs:
 2. Let customers generate their own pattern, preview it, and get an order code (no backend).
 
 **Hidden concept — transformation preserves essence** (from Ovid's *Metamorphoses*,
-public domain). Daphne becomes a laurel but her story remains; a customer's name becomes a
-pattern but their moment remains. Ovid is **never named on the site**. It shows up only as:
-brand language about transformation, occasion motifs (laurel, flower, crown, stars), and a
+public domain). Baucis and Philemon, married a lifetime, become an oak and a linden growing side
+by side — their love remains; a customer's name becomes a pattern but their moment remains. Ovid is **never named on the site**. It shows up only as:
+brand language about transformation, occasion motifs (two trees, flower, crown, twin stars), and a
 "Metamorphoses Collection — coming 2027" teaser on the About page.
+
+**Choosing stories:** only use tales whose meaning fits the occasion. Daphne (fleeing Apollo),
+Narcissus (self-obsession) and Atalanta (lost her race) do **not** fit weddings, birthdays or
+marathons and must not be named for them. Fitting: Baucis & Philemon (lifelong love → wedding),
+Castor & Pollux (brothers who would not be parted → team). Otherwise name series by motif
+(The Bloom, The Laurel Crown).
 
 **Tech:** vanilla HTML + CSS + JavaScript. p5.js 1.9.4 from
 `https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js` in **instance mode**
 (`new p5(sketch)`). opentype.js 1.3.4 from
 `https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js` (generator page only,
-for print files). No frameworks, no build step, plain `<script>` tags (works from `file://`).
+for print files) and JSZip 3.10.1 from `https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js`
+(loaded on first use, for group orders). No frameworks, no build step, plain `<script>` tags (works from `file://`).
 Instructor-style code: clear names, comments that explain *why*, small functions.
 
 ### File structure
@@ -87,7 +94,10 @@ exactly three colours, never animated or swapped per occasion.
 | ink | `#2a1e10` | ink 2 |
 | cream | `#f5ede0` | ground (background layer only) |
 
-Occasions are told apart by **shapes** (motifs), never by colour.
+Occasions are told apart by **shapes** (motifs), never by colour. Two printing variants keep to
+the brand: **dark fabric** prints rust-light `#b87050` + cream `#f5ede0` straight onto the fabric
+(no background layer); **club colours** (match / team orders only, opt-in) swap the two artwork
+inks for the club's colours (§8.4).
 
 ### Typography
 
@@ -97,8 +107,9 @@ Occasions are told apart by **shapes** (motifs), never by colour.
 
 - Headings: Merriweather 700, left-aligned, never gratuitously large.
 - Body: Merriweather 300, 16.5px, line-height 1.75. Italic 300 for quotes and secondary lines.
-- Labels, metadata, UI, dates, order codes: Courier Prime 10–12px, letter-spacing 0.08em,
-  **lowercase as written** (no `text-transform`).
+- Labels, metadata, UI, dates, order codes: Courier Prime **12px** (taglines 11px — nothing
+  smaller, customers include people in their 60s), letter-spacing 0.08em, **lowercase as written**
+  (no `text-transform`).
 - Fallbacks: `'Merriweather', Georgia, serif` and `'Courier Prime', 'Courier New', monospace`.
 
 ---
@@ -143,7 +154,7 @@ body { margin: 0; background: var(--bg); color: var(--text);
 h1, h2, h3 { font-weight: 700; line-height: 1.25; margin: 0 0 .6em; text-wrap: balance; }
 h1 { font-size: clamp(2rem, 4.6vw, 3rem); }
 h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
-.label { display: block; font: 400 11px/1.5 var(--font-mono); letter-spacing: .08em;
+.label { display: block; font: 400 12px/1.5 var(--font-mono); letter-spacing: .08em;
          color: var(--amber-text); margin: 0 0 10px; }
 .section { padding: clamp(56px, 8vw, 96px) 0; }
 .section--bone { background: var(--section-bone); --amber-text: #5f512b; }
@@ -193,8 +204,8 @@ input[type="range"] { /* 3px bone track; 18px rust thumb with a 3px card-coloure
 
 `--section-ink` background, `--on-ink` text, 56px top padding. Three columns (one column
 ≤720px): wordmark + italic tagline · links one per line (Merriweather 300) · right-aligned
-Courier Prime 11px **amber** (`--amber`, it's a dark ground): `Dundalk · Co. Louth · Ireland`,
-`hello@inky.ie`, `@inky.ie`. Bottom row: `© 2026 inky`, Courier Prime 10px amber, above a
+Courier Prime 12px **amber** (`--amber`, it's a dark ground): `Dundalk · Co. Louth · Ireland`,
+`hello@inky.ie` (a `mailto:` link, underlined), `@inky.ie`. Bottom row: `© 2026 inky`, Courier Prime 10px amber, above a
 1px `rgba(194,178,128,.2)` rule.
 
 ### 3.6 Motion
@@ -290,46 +301,67 @@ falls back to the `inky` demo).
 ### 6.3 Controls
 
 - **Occasion** — 2×2 toggle buttons, two lines each: emoji + name (Merriweather bold) and an
-  italic Courier Prime 10px amber tagline: 💍 Wedding / "drawn from the laurel — love that
-  endures"; 🎂 Birthday / "drawn from the flower — the joy of becoming"; 🏃 Marathon / "drawn
+  italic Courier Prime 11px amber tagline: 💍 Wedding / "drawn from two trees — love that grows
+  together"; 🎂 Birthday / "drawn from the flower — the joy of becoming"; 🏃 Marathon / "drawn
   from the crown — a finish line earned"; 🏐 Match / GAA / "drawn from the stars — two sides,
   one moment". Selected: rust border (plus 1px inset rust ring) on cream. The selected tagline
   repeats under the grid in 12px rust italic. `role="radiogroup"`, `aria-checked`.
 - **Style** (marathon only, in the occasion card so it sits above the canvas on mobile) —
-  two toggles like the occasion buttons: `Laurel sprigs` / "a leaf pair for every km",
-  `Medallion` / "a ray for every km".
-- **Your details** — Name (max 30, placeholder "e.g. Aoife & Ciarán"), Date (max 20,
-  "e.g. 12.06.2027"), Place (max 24, "e.g. Dundalk"). 350ms debounce.
+  `Laurel sprigs` / "fuller with every km", `Medallion` / "a ray for every km".
+- **Your details** — Name (max 30, "e.g. Aoife & Ciarán"), Date (max 20, "e.g. 12.06.2027"),
+  Place (max 24, "e.g. Dundalk"). 350ms debounce. Under each field a live warning (rust Courier
+  12px) names any character the print fonts can't draw (e.g. emoji): "We can't print 😀 —
+  please leave it out." Latin, Latin Extended and Chinese are all printable.
 - **Occasion data** — only the selected occasion's fieldset is shown (`data-occasion-only`):
-  - *your wedding*: years together (0–75), guests (optional). Hint: "A leaf pair for every year
-    together — at thirty the branches meet. Guests gather as blossoms by the bow."
-  - *the birthday*: age (0–120). Hint: "A ring of petals for every ten years, and a leaf for each
+  - *your wedding*: years together (0–75), guests (optional). Hint: "Your wedding day starts the
+    wreath; every year together adds a leaf pair, and after 22 years the branches meet. Guests
+    gather as blossoms by the bow."
+  - *the birthday*: age (0–120). Hint: "A new ring of petals every ten years, and a leaf for each
     year since."
-  - *the score* (match): us / them, side by side, GAA `2-14` (goals-points, goal = 3) or a plain
-    number. Hint: "GAA scores (goals-points) or plain numbers. Each side's star grows with its
-    score; every point adds a small star."
-- **Your run** (marathon only) — distance km (number input + chips `5K` `10K` `Half`
-  `Full` = 5 / 10 / 21.0975 / 42.195), finish time (`3:41:20`; two parts: first part under 10
-  = h:mm, else mm:ss), km splits (optional textarea, "5:12, 5:08 …" or decimal minutes).
-  Hint: "Every km adds a leaf pair (or a ray), your splits colour the faster ones, and your
-  time grows the laurel."
-- **How it felt** (every occasion) — slider 0–10, default 5, value in rust; hint "The bigger
-  the moment, the fuller the leaves and laurel." Text fields debounce 350ms; sliders and chips
-  redraw immediately.
+  - *the match*: our score / their score side by side (GAA `2-14`, goal = 3 points, or a plain
+    number), against (optional opponent name), colours (select: "inky colours — terracotta & ink",
+    an optgroup of the 32 counties, "Custom club colours…" which reveals two colour pickers).
+    Hint explains the stars are always equal and club colours are confirmed before printing.
+  - *your run* (marathon): distance (number + km / miles select; chips `5K` `10K` `Half` `Full`
+    fill it in the chosen unit; switching unit converts the number), finish time (`3:41:20`; two
+    parts: first part under 10 = h:mm, else mm:ss), splits per km / per mile (optional textarea —
+    accepts "5:12, 5:08 …", decimal minutes, or a splits table pasted from Strava / Garmin: when
+    any m:ss times are present only those are read). Hint: "The further you run, the more it
+    grows. Your splits colour the faster stretches, and your time grows the laurel."
+- **Fullness** (every occasion) — slider 0–10, default 5, with `light` and `lush` at its ends;
+  hint "Lighter and airy, or lush with bigger leaves and a fuller laurel." (Not "how it felt" —
+  gift-givers can't rate someone else's day.)
 - **Design variation** — slider 1–99, value `#01` in Courier Prime rust; hint "Drag to explore
-  different arrangements for the same name."
+  different arrangements for the same name." Below it a checkbox, checked by default:
+  "Print the numbers on the design (years, age, distance, score)" — unchecked hides the stats line.
 - **Actions** — `Compare 4 Variations` (primary) and `Shuffle ↺` (secondary, random seed
   ≠ current), full width, stacked.
-- **Order code** — dashed-border box in rust Courier Prime + `Copy` button (clipboard, with an
-  `execCommand` fallback) + hint "Share this code when ordering — we'll reproduce your exact
-  design." A toast confirms the copy.
-- **Export** (every occasion) — print size select (Tote bag — 20 cm / Coaster — 9 cm /
-  Keychain — 5 cm) and one button `↓ Print file (SVG)`, hint "Print-ready SVG: two solid inks,
-  text as outlines, lines no thinner than 0.35 mm at the size you pick." No PNG export: the
-  print file is always vector.
+- **Printed on** — product select with prices ("Tote bag — 20 cm print · €18–28", "Coaster — 9 cm
+  · set of 4 €22–35", "Keychain — 5 cm · €8–14") and fabric select ("Light (natural, cream,
+  white)" / "Dark (black, navy, brown)").
+- **Order code** (after 2+ name letters) — code box + `Copy`; then `Email us this design`
+  (primary, a `mailto:hello@inky.ie` link with subject "Order {code}" and a body listing code,
+  occasion, name, date, place, product, fabric, an empty "Quantity:" line and the design link)
+  and `Copy design link` (secondary). Hint: "The email has everything we need to print your exact
+  design — just add which product and how many. The link reopens this design any time."
+- **Export** — one button `↓ Print file (SVG)`; hint "Print-ready SVG: solid inks, text as
+  outlines, lines no thinner than 0.35 mm at the size you pick." If any character couldn't be
+  drawn, a warning under the button names it. No PNG export.
+- **Ordering for a team or a group?** (`<details>`, closed) — textarea "one name per line"
+  (max 100). `↓ Download all (.zip)` builds one design per name with every other input shared,
+  zips the SVGs with `order-codes.csv` (Name, Order code, Design link) and shows progress.
+- **Open a saved design** (`<details>`, closed) — paste a design link or key, `Open`.
 
 Below the canvas: preview label `Name · Date · Place` (Courier Prime), or `inky · sample
-pattern` in the demo state.
+pattern` in the demo state; then a row of three **product mockups** (tote, coaster set,
+keychain — 112px, each drawn with that product's own print rules and the chosen fabric). The
+current product is outlined in rust; tapping one selects that product.
+
+### 6.5 Design links
+
+A design link is `generator.html#design={design key}` (§8.5). Opening it restores every input
+(occasion, style, name, date, place, seed, data, fullness, numbers, product, fabric, colours)
+and shows the order code. Works from a website and from a saved file.
 
 ### 6.4 Compare 4 Variations — exact behaviour
 
@@ -374,20 +406,33 @@ Five sections, alternating cream / bone:
    "One palette for everything we print — terracotta, cream and ink. Each occasion grows its own
    shapes instead." with three swatch dots. Four cards (4 across, 2×2 ≤980px, 1 ≤460px): cream
    strip, icon, title (Wedding · Birthday · Marathon / Run · Match / Event), amber motif line
-   (v4 copy), a faint flat SVG motif bottom-right at 15% opacity (3-leaf branch, 5-petal flower,
-   crown arc, 6-point star + two-dot constellation). Each card adds an italic "grows with" line:
-   wedding "Grows with your years together: a leaf pair for each one, and blossoms for your
-   guests."; birthday "Grows with each birthday: a ring of petals every ten years, a leaf for
-   every year since."; marathon "Grows with your run: every km adds a leaf pair (or a ray), your
-   faster stretches turn terracotta, your time grows the laurel."; match "Grows with the score:
-   each side's star with its points, a small star for every score."
+   (wedding "Drawn from two trees that grew as one — love that endures"; birthday "Drawn from the
+   spring flower — new beginnings, the joy of becoming"; marathon and match as v4), a faint flat
+   SVG motif bottom-right at 15% opacity (3-leaf branch, 5-petal flower, crown arc, 6-point star
+   + two-dot constellation), and an italic "grows with" line: wedding "Grows with your years
+   together: your wedding day starts the wreath, every year adds a leaf pair, and your guests
+   become blossoms."; birthday "Grows with each birthday: a new ring of petals every ten years, a
+   leaf for every year since."; marathon "Grows with your run: every km adds a leaf pair (or a
+   ray), your faster stretches turn terracotta, your time grows the laurel."; match "Grows with
+   the score: twin stars for both sides, win or lose, and a small star for every point."
 4. **The Metamorphoses Collection** (`.section--bone`) — eyebrow `COMING 2027`, bold italic
-   heading, intro (v4 copy), four cream series cards (Daphne, Narcissus, Atalanta, Gemini — tags,
-   descriptions, line-art motif in rust at 40%, `Coming 2027` badge). Four columns on desktop;
-   a scroll-snapping horizontal row ≤900px. CTA line in Courier: "Want to be first to know? Email
-   us at hello@inky.ie".
-5. **Contact** (cream) — label `get in touch`, h2 "Say hello."; left: email / instagram / studio
-   (plain, copyable text, no mailto); right: italic note (v4 copy) + `Create Your Design →`.
+   heading, intro (v4 copy), four cream series cards with a tag, italic title, one line,
+   line-art motif in rust at 40% and a `Coming 2027` badge:
+   - `WEDDING · TWO TREES` **Baucis & Philemon** — "Married a lifetime, they asked never to be
+     parted — and grew on as an oak and a linden, side by side. Your names, grown together."
+     (two-trees motif)
+   - `BIRTHDAY · BLOOM` **The Bloom** — "Every spring the meadow comes back new. Another year of
+     you, in flower." (5-petal flower)
+   - `MARATHON · CROWN` **The Laurel Crown** — "The victor's crown, earned one stride at a time.
+     Your finish line, drawn in laurel." (crown arc)
+   - `MATCH · TWIN STARS` **Castor & Pollux** — "Two brothers who would not be parted, set in the
+     sky side by side. Your team, together, win or lose." (constellation)
+   Four columns on desktop; a scroll-snapping horizontal row ≤900px. CTA line in Courier: "Want
+   to be first to know? Email us at hello@inky.ie" (mailto link).
+5. **Contact** (cream) — label `get in touch`, h2 "Say hello."; left: email (a `mailto:` link) /
+   instagram / studio as copyable text; right: italic note "We're a small team. We reply to every
+   message personally. Orders are taken by email — the generator's "Email us this design" button
+   fills in everything we need; just add what you'd like it printed on." + `Create Your Design →`.
 
 ---
 
@@ -396,8 +441,11 @@ Five sections, alternating cream / bone:
 Everything is laid out in a **1000 × 1000 design box** and only scaled at the end, so one
 design fits a 5 cm keychain or a 20 cm tote. Same inputs → same design, always (DJB2
 `hashString` + LCG `createRng`, both as in v4, in `patterns.js`). Seed key:
-`NAME_WITHOUT_ACCENTS_UPPER::date::place::occasion::seed`. One entry point:
-`buildDesign({ occasion, name, date, place, seed, style, data, product })` → `{ shapes, texts }`,
+`NAME_WITHOUT_ACCENTS_UPPER::canonicalDate::PLACE_UPPER::occasion::seed`, where the date is
+canonicalised (`12/06/2027`, `12-6-27`, `2027-06-12` → `12.06.2027`) so the way it's typed never
+changes the design, and accents are removed (also Ł→L, ß→ss, Æ→AE…). One entry point:
+`buildDesign({ occasion, name, date, place, seed, style, data, product, colours, showNumbers })`
+→ `{ shapes, texts, palette }`,
 painted by `paintDesign(p, size, design)` and written by `buildDesignSvg(design, meta)`.
 
 ### 8.1 The rule for every occasion
@@ -407,28 +455,34 @@ grown. Changing data never re-randomises anything, and a bigger number only ever
 at fixed places — it never moves or reshuffles existing ones. Element spacing is constant, so
 more data means fuller, never more crowded. The one deliberate exception is the birthday decade
 (nine foot-leaves become a new ring of petals at each tenth year). "How it felt" (0–10) scales
-leaves and laurel on every occasion. With no data yet, show a small "seedling" (e.g. 2 km, 3 years,
-age 1), never an empty canvas.
+leaves and laurel on every occasion ("fullness").
+
+**Minimum fullness:** the smallest common case must still look complete — newlyweds, a 5K, a
+child's birthday are the most common buyers. So every occasion starts from a full-looking base
+and data adds on top: the wedding wreath starts with 8 pairs (the wedding day itself); sprigs
+start at 6 pairs; the medallion always shows the full 42-slot dial (unrun km as short ink ticks);
+a birthday flower always has at least 2 petal rings.
 
 **Wedding** — two laurel branches rise from a terracotta bow at the bottom of a circle
 (centre (500, 430), r 300 × seeded squash 0.90–1.06) around the couple's **initials** ("Aoife &
 Ciarán" → `A & C`, Merriweather Bold 128 ink, `&` 80 terracotta; one name → one initial 150). One
-leaf pair per year together: year *y* goes to side *y mod 2*, slot ⌊y/2⌋ (15 slots per side); at
-30 years the branches meet at the top. Each pair has one terracotta and one ink leaf (alternating),
+base of 8 pairs for the wedding day, then one pair per year together: pair *y* goes to side
+*y mod 2*, slot ⌊y/2⌋ (15 slots per side); after 22 years the branches meet at the top. Each pair has one terracotta and one ink leaf (alternating),
 seeded lean 0.48–0.78 rad. Guests → up to 8 small five-petal blossoms gathered at the bow (one per
 25 guests). Stats: `18 YEARS TOGETHER · 120 GUESTS`.
 
 **Birthday** — one flower on a fixed, seeded swaying stem from (500, 380) to (500, 775). A ring of
-petals per decade (`1 + ⌊age/10⌋`, max 7; ring *k* has `8 + 3k` petals, mostly terracotta with an
+petals per decade (`2 + ⌊age/10⌋`, max 7; ring *k* has `8 + 3k` petals, mostly terracotta with an
 ink ring every third), an ink centre; one leaf per year past the last decade at fixed places
 climbing the stem. Feeling → rounder petals, fuller leaves. Stats: `34 YEARS`.
 
 **Match / GAA** — twin four-point stars (Castor & Pollux) at (345, 440) terracotta = us and
-(655, 440) ink = them, joined by a thin ink line; each star's radius `85 + 2.2 × min(points, 30)`,
-seeded sharpness. An arch of small four-point stars above (seeded radius 330–395): one per point
+(655, 440) ink = them, joined by a thin ink line. The twins are **always equal** (radius
+`90 + 1.3 × min(total points of the match, 50)`) — a lost final is still worth keeping, so the
+design never shows who lost. Seeded sharpness. An arch of small four-point stars above (seeded radius 330–395): one per point
 scored, ours climbing the left side, theirs the right (24 slots each). A short two-branch laurel
 underneath, `lerp(2, 8, feeling)` leaf pairs per side. Scores parse GAA `2-14` (goal = 3 points)
-or plain numbers. Stats: `2-14 · 1-12`.
+or plain numbers. Stats: `2-14 · 1-12 V ARDEE` (opponent optional).
 
 ### 8.2 Marathon
 
@@ -480,19 +534,50 @@ outlines** via opentype.js (fonts: `@fontsource/merriweather@5.3.0` latin-700 WO
 `<!-- PRINT NOTE: Convert all text to outlines in Illustrator/Inkscape before sending to xTool -->`
 and tell the user in the toast. No `opacity`, no gradients, three colours only.
 
-### 8.3 Order codes
+### 8.3 Sprig and medallion floors
 
-Base: `INK-{OC}-{NAME≤6}-{DIGITS≤8}-{PLACE≤3}-{SEED2}`, accents removed, with occasion codes
-`WE` wedding, `BI` birthday, `MA` marathon, `MT` match (not `MA` — that collides). Then the data:
+Sprig leaf pairs = `round(6 + km × 39 / 42.195)` (cap 45), placed by the fixed km → slot map.
+Medallion: every km slot not yet run is a short (16-unit) ink tick at its clock position; run
+kilometres are full rays. Distances may be entered in miles (converted at 1.609344); splits
+per mile are converted to per km; stats show the chosen unit (`26.2 MI`).
 
-| Occasion | Suffix | Example |
-| --- | --- | --- |
-| wedding | `Y{years}[-G{guests}]-I{feeling}` | `INK-WE-AOIFEC-12062027-DUN-01-Y18-G120-I5` |
-| birthday | `A{age}-I{feeling}` | `INK-BI-SAOIRS-12062027-DUN-01-A34-I5` |
-| marathon | `{A\|B}-D{km×10}-T{hhmmss}-I{feeling}[-P{12 pace chars}]` | `INK-MA-AOIFE-12062027-DUN-01-A-D422-T034120-I5` |
-| match | `S{us}V{them}-I{feeling}` (GAA `2-14` written `2.14`) | `INK-MT-DUNDAL-12062027-DUN-01-S2.14V1.12-I5` |
+### 8.4 Colour plans
 
-Missing values are written `X`.
+Shapes and texts carry a **role** (`terracotta` or `ink`), resolved to real colours only when
+painting / writing the SVG:
+
+| Plan | Ground | `terracotta` role | `ink` role | Text |
+| --- | --- | --- | --- | --- |
+| light fabric (default) | cream `#f5ede0` (own SVG layer) | `#8c4a2a` | `#2a1e10` | ink / terracotta |
+| dark fabric | none — the fabric (`#2a1e10` on screen) | `#b87050` | `#f5ede0` | cream / `#b87050` |
+| club colours (match only) | as fabric | club colour 1 | club colour 2 | as fabric |
+
+A club colour with contrast < 1.8:1 against the ground (e.g. white on cream) is replaced by the
+brand ink so it still shows. The print-file header lists every ink used and, for club colours,
+"confirm exact shades before printing".
+
+### 8.5 Fonts in the print file
+
+Text is outlined glyph by glyph with a fallback chain per role: Merriweather Bold latin →
+latin-ext (serif); Courier Prime latin → latin-ext (mono); then **Noto Serif SC** (700 for
+serif, 400 for mono) — the fontsource stylesheet `@fontsource/noto-serif-sc@5.3.1/{weight}.css`
+is fetched only when needed, its `unicode-range` blocks tell which of ~100 subset files hold the
+characters, and only those are downloaded. The preview canvas draws text with the same stack
+(`Merriweather, "Noto Serif SC"` / `"Courier Prime", "Noto Serif SC"`, Noto loaded from Google
+Fonts with unicode-range so it costs nothing for Latin names). Characters no font can draw are
+reported back and shown to the customer — never silently dropped.
+
+### 8.6 Design key and order code
+
+There is no database, so the design travels with the customer:
+
+- **Design key** — every input as compact JSON (`v, o, n, d, p, s, st, pr, fab, cl, num, data`),
+  UTF-8, base64url. `decodeDesignKey` accepts the key or a whole link.
+- **Order code** — short and human: `INK-{OC}-{NAME≤6}-{DATE DIGITS≤8}-{CHECK5}` with `OC` =
+  `WE` wedding, `BI` birthday, `MA` marathon, `MT` match (not `MA` — that collides), and
+  `CHECK5` = 5 characters (alphabet `23456789ABCDEFGHJKLMNPQRSTUVWXYZ`) from the hash of the
+  design key, so the shop can confirm a link matches the code they were quoted. Example:
+  `INK-WE-AOIFEC-12062027-6UAWN`. The code alone does **not** rebuild a design; the link does.
 
 ---
 
@@ -507,6 +592,14 @@ Missing values are written `X`.
 - Growth only adds: wedding 2 → 30 years and marathon 10 → 42.195 km keep every earlier mark
   in place (sprig tip leaves move outward as their sprig lengthens; the big match stars grow).
 - Every occasion exports SVG; there is no PNG button.
-- Exported SVG (any occasion): valid XML, no `opacity`, no `<text>` (when fonts load), only
-  `#8c4a2a`, `#2a1e10`, `#f5ede0`; keychain export has no line under 7 units (0.35 mm).
+- Exported SVG (any occasion): valid XML, no `opacity`, no `<text>` (when fonts load); light
+  fabric uses only `#8c4a2a`, `#2a1e10`, `#f5ede0`; keychain export has no line under 7 units.
+- `12.06.2027` and `12/06/2027` give the same design; a design link reopened in a fresh tab shows
+  the same order code and the same name (accents and Chinese characters included).
+- A Chinese name (王小明) exports with every character outlined and no warning; an emoji shows
+  the live warning.
+- Wedding at 0 years, marathon at 5 km and birthday at age 3 look complete, not sparse.
+- Match stars are the same size whatever the score.
+- Group order with three names downloads a zip of three SVGs plus `order-codes.csv`.
+- Every `hello@inky.ie` on the site is a `mailto:` link.
 - No forbidden words on any page; no colour outside the palettes.

@@ -67,12 +67,6 @@ const PACE_SLOWEST  = 480;    // 8:00 /km → speed 0
 // Stretches run faster than this (relative 0..1) are drawn in terracotta
 const FAST_THRESHOLD = 0.55;
 
-// Print fonts for converting text to outlines (WOFF — opentype.js can parse these)
-const PRINT_FONT_URLS = {
-  serif: 'https://cdn.jsdelivr.net/npm/@fontsource/merriweather@5.3.0/files/merriweather-latin-700-normal.woff',
-  mono:  'https://cdn.jsdelivr.net/npm/@fontsource/courier-prime@5.3.0/files/courier-prime-latin-400-normal.woff'
-};
-
 /* --------------------------------------------------------------------------
    2. Small maths helpers
    -------------------------------------------------------------------------- */
@@ -109,10 +103,16 @@ function parseFinishTime(text) {
   return minutes > 0 ? minutes : null;
 }
 
-// Km splits → seconds per km. Accepts "5:12, 5:08 5:15" or decimal minutes "5.2"
+// Splits → seconds per unit. Accepts "5:12, 5:08 5:15", decimal minutes "5.2",
+// or a table pasted from Strava / Garmin: if any m:ss times are present, only
+// those are used (lap numbers, elevation etc. are ignored; h:mm:ss totals too).
 function parseSplits(text) {
-  return String(text || '')
-    .split(/[\s,;]+/)
+  const clean = String(text || '');
+  const times = clean.match(/(^|[^\d:])(\d{1,2}:\d{2})(?![:\d])/g);
+  const tokens = times
+    ? times.map(function(t) { return t.replace(/^[^\d]/, ''); })
+    : clean.split(/[\s,;]+/);
+  return tokens
     .map(function(token) {
       if (!token) return null;
       if (token.indexOf(':') !== -1) {
@@ -122,7 +122,7 @@ function parseSplits(text) {
       const value = Number(token);
       return isNaN(value) ? null : value * 60;
     })
-    .filter(function(seconds) { return seconds && seconds >= 120 && seconds <= 1200; });
+    .filter(function(seconds) { return seconds && seconds >= 120 && seconds <= 1500; });
 }
 
 // Seconds per km → speed 0 (slow) .. 1 (fast)
@@ -147,14 +147,21 @@ function resamplePace(splits) {
 /* --------------------------------------------------------------------------
    4. Normalise: raw run data → 0..1 values the growth stage understands
    -------------------------------------------------------------------------- */
+const KM_PER_MILE = 1.609344;
+
 function normaliseRunData(raw) {
-  const km = raw.distanceKm > 0 ? Math.min(raw.distanceKm, 100) : null;
+  // raw.distance is in raw.unit ('km' or 'mi'); splits are per that unit
+  const unit = raw.unit === 'mi' ? 'mi' : 'km';
+  const perUnit = unit === 'mi' ? KM_PER_MILE : 1;
+  const typed = parseFloat(raw.distance);
+  const km = typed > 0 ? Math.min(typed * perUnit, 100) : null;
   const minutes = parseFinishTime(raw.finishTime);
-  const splits = parseSplits(raw.splits);
+  const splits = parseSplits(raw.splits).map(function(seconds) { return seconds / perUnit; });
   const profile = splits.length >= 2 ? resamplePace(splits) : null;
   const intensity = clamp01((raw.intensity === undefined ? 5 : raw.intensity) / 10);
 
   return {
+    unit: unit,
     distanceKm: km,
     finishMinutes: minutes,
     paceProfile: profile,
@@ -177,26 +184,6 @@ function relativeSpeedAt(run, t) {
   const high = Math.min(low + 1, profile.length - 1);
   const speed = lerp(profile[low], profile[high], position - low);
   return (speed - slowest) / (fastest - slowest);
-}
-
-// Run data for the order code, e.g. "D422-T034120-I7-PABCD…"
-function encodeRunData(run) {
-  const parts = [];
-  if (run.distanceKm) parts.push('D' + Math.round(run.distanceKm * 10));
-  if (run.finishMinutes) {
-    const totalSeconds = Math.round(run.finishMinutes * 60);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    parts.push('T' + [h, m, s].map(function(v) { return String(v).padStart(2, '0'); }).join(''));
-  }
-  parts.push('I' + Math.round(run.intensity * 10));
-  if (run.paceProfile) {
-    parts.push('P' + run.paceProfile.map(function(v) {
-      return Math.round(v * 35).toString(36);
-    }).join('').toUpperCase());
-  }
-  return parts.join('-');
 }
 
 /* --------------------------------------------------------------------------
@@ -324,11 +311,17 @@ function printContext(productKey) {
   };
 }
 
-// How many leaf pairs / rays the run has earned. With no distance yet, a
-// two-kilometre "seedling" so the canvas is never empty.
+// How many rays the run has earned (medallion). With no distance yet, two.
 function earnedKm(run, cap) {
   if (!run.distanceKm) return 2;
   return Math.min(cap, Math.max(1, run.distanceKm));
+}
+
+// Leaf pairs for the sprigs. Every run starts from a full-looking base of six
+// pairs so a 5K is a complete little bouquet; distance then adds up to 39 more.
+function sprigPairsFor(run) {
+  const km = run.distanceKm ? Math.min(run.distanceKm, MARATHON_KM) : 0;
+  return Math.min(SPRIGS.maxPairs, Math.round(6 + km * 39 / MARATHON_KM));
 }
 
 // Point and heading at a given length along a polyline
@@ -360,8 +353,7 @@ function polylineUpTo(points, lengths, target) {
 // Style A
 function growSprigs(skeleton, run, print) {
   const shapes = [];
-  const km = earnedKm(run, SPRIGS.maxPairs);
-  const pairs = Math.round(km);
+  const pairs = sprigPairsFor(run);
   const stemWidth = Math.max(2.6, print.minLine);
   const sizeBoost = 0.9 + 0.2 * run.intensity;             // how it felt → fuller leaves
 
@@ -424,6 +416,15 @@ function growMedallion(skeleton, run, print) {
   shapes.push({ kind: 'ring', colour: 'ink', x: M.cx, y: M.cy, r: M.ringR, width: Math.max(2.6, print.minLine) });
   if (skeleton.doubleRing && !print.isSmall) {
     shapes.push({ kind: 'ring', colour: 'ink', x: M.cx, y: M.cy, r: M.ringR - 7, width: Math.max(1, print.minLine) });
+  }
+
+  // The full dial is always there: every kilometre slot starts as a short ink
+  // tick, so even a 5K reads as a complete medallion. Run kilometres grow out
+  // of their ticks as full rays.
+  for (let i = Math.ceil(km); i < M.raySlots; i += every) {
+    const angle = -Math.PI / 2 + (i / M.raySlots) * Math.PI * 2;
+    shapes.push({ kind: 'fill', colour: 'ink',
+      points: rayOutline(M.cx, M.cy, angle, M.rayStart, 16, Math.max(5, print.minLine), Math.max(1.4, print.minLine / 2)) });
   }
 
   // Rays, clockwise from the top. The last ray grows with the part-kilometre.
@@ -550,7 +551,7 @@ function starOutline(cx, cy, radius, points, inner, rotation) {
 
 // --- Wedding: two laurel branches rising from a bow around the couple's initials
 // One leaf pair per year together, alternating left / right, at fixed places.
-// At 30 years the two branches meet at the top. Guests add small blossoms there.
+// Eight pairs for the wedding day, then one per year; the branches meet after 22 years.
 const WEDDING = { cx: 500, cy: 430, r: 300, slotsPerSide: 15, maxYears: 30, maxBlossoms: 8 };
 
 function makeWeddingSkeleton(rng) {
@@ -579,7 +580,9 @@ function normaliseWeddingData(raw) {
 function growWedding(skeleton, data, print) {
   const shapes = [];
   const W = WEDDING;
-  const years = data.years === null ? 3 : Math.max(1, Math.min(W.maxYears, Math.round(data.years)));
+  // The wreath starts with the wedding day itself (eight pairs, four a side),
+  // then grows a pair for every year together; after 22 years the branches meet.
+  const years = Math.min(W.maxYears, 8 + (data.years === null ? 0 : Math.round(data.years)));
   const sizeBoost = 0.9 + 0.25 * data.intensity;
   const span = Math.PI - 0.22;                       // bottom → top, a hair short of meeting
   const thetaAt = function(side, u) { return Math.PI / 2 + side * (0.12 + u * span); };
@@ -681,7 +684,7 @@ function growBirthday(skeleton, data, print) {
   const shapes = [];
   const B = BIRTHDAY;
   const age = data.age === null ? 1 : Math.max(1, Math.round(data.age));
-  const rings = Math.min(B.maxRings, 1 + Math.floor(age / 10));
+  const rings = Math.min(B.maxRings, 2 + Math.floor(age / 10));   // a child's flower is still full
   const leaves = age % 10;
   const petalWidth = 0.42 + 0.2 * data.intensity;           // a bigger day, rounder petals
   // Every tenth year the nine leaves at the foot become a new ring of petals —
@@ -749,7 +752,8 @@ function makeMatchSkeleton(rng) {
 }
 
 function normaliseMatchData(raw) {
-  return { us: parseScore(raw.us), them: parseScore(raw.them), intensity: normaliseFeeling(raw) };
+  return { us: parseScore(raw.us), them: parseScore(raw.them),
+    opponent: String(raw.opponent || '').trim(), intensity: normaliseFeeling(raw) };
 }
 
 function growMatch(skeleton, data, print) {
@@ -773,9 +777,10 @@ function growMatch(skeleton, data, print) {
     }
   });
 
-  // The twins: a thin line joins them, then the two big stars
-  const radiusFor = function(score) { return 85 + 2.2 * Math.min(score ? score.total : 0, 30); };
-  const usR = radiusFor(data.us), themR = radiusFor(data.them);
+  // The twins are always equal — the day belongs to both sides, win or lose.
+  // Together they grow with the total points scored in the match.
+  const total = (data.us ? data.us.total : 0) + (data.them ? data.them.total : 0);
+  const usR = 90 + 1.3 * Math.min(total, 50), themR = usR;
   shapes.push({ kind: 'line', colour: 'ink', width: Math.max(2, print.minLine),
     points: [[M.leftX, M.y], [M.rightX, M.y]] });
   shapes.push({ kind: 'fill', colour: 'terracotta', points: starOutline(M.leftX, M.y, usR, 4, skeleton.sharpness, -Math.PI / 2 + skeleton.bigRotation) });
@@ -806,8 +811,9 @@ function growMatch(skeleton, data, print) {
 }
 
 function matchStats(data) {
-  if (!data.us && !data.them) return '';
-  return (data.us ? data.us.label : '–') + ' · ' + (data.them ? data.them.label : '–');
+  if (!data.us && !data.them) return data.opponent ? 'V ' + data.opponent.toUpperCase() : '';
+  const score = (data.us ? data.us.label : '–') + ' · ' + (data.them ? data.them.label : '–');
+  return data.opponent ? score + ' V ' + data.opponent.toUpperCase() : score;
 }
 
 /* --------------------------------------------------------------------------
@@ -817,7 +823,10 @@ function matchStats(data) {
    -------------------------------------------------------------------------- */
 function formatRunStats(run) {
   const parts = [];
-  if (run.distanceKm) parts.push((Math.round(run.distanceKm * 10) / 10).toFixed(1) + ' KM');
+  if (run.distanceKm) {
+    const shown = run.unit === 'mi' ? run.distanceKm / KM_PER_MILE : run.distanceKm;
+    parts.push((Math.round(shown * 10) / 10).toFixed(1) + (run.unit === 'mi' ? ' MI' : ' KM'));
+  }
   if (run.finishMinutes) {
     const totalSeconds = Math.round(run.finishMinutes * 60);
     const h = Math.floor(totalSeconds / 3600);
@@ -847,39 +856,39 @@ function buildTextItems(details, statsText, print) {
    9. One call to build any design (data only)
    -------------------------------------------------------------------------- */
 const MARATHON_STYLES = {
-  sprigs:    { label: 'Laurel sprigs', code: 'A' },
-  medallion: { label: 'Medallion',     code: 'B' }
+  sprigs:    { label: 'Laurel sprigs' },
+  medallion: { label: 'Medallion' }
 };
 
-// Each occasion: how to read its data, grow it, describe it, and encode it
+// Each occasion: how to read its data, grow it and describe it
 const OCCASION_ENGINES = {
   marathon: { normalise: normaliseRunData, stats: formatRunStats },   // grows via its two styles
-  wedding: {
-    normalise: normaliseWeddingData, skeleton: makeWeddingSkeleton, grow: growWedding, stats: weddingStats,
-    code: function(d) {
-      return ['Y' + (d.years === null ? 'X' : Math.round(d.years)), d.guests ? 'G' + Math.round(d.guests) : null,
-        'I' + Math.round(d.intensity * 10)].filter(Boolean).join('-');
-    }
-  },
-  birthday: {
-    normalise: normaliseBirthdayData, skeleton: makeBirthdaySkeleton, grow: growBirthday, stats: birthdayStats,
-    code: function(d) { return 'A' + (d.age === null ? 'X' : Math.round(d.age)) + '-I' + Math.round(d.intensity * 10); }
-  },
-  match: {
-    normalise: normaliseMatchData, skeleton: makeMatchSkeleton, grow: growMatch, stats: matchStats,
-    code: function(d) {
-      const s = function(score) { return score ? score.label.replace('-', '.') : 'X'; };
-      return 'S' + s(d.us) + 'V' + s(d.them) + '-I' + Math.round(d.intensity * 10);
-    }
-  }
+  wedding:  { normalise: normaliseWeddingData, skeleton: makeWeddingSkeleton, grow: growWedding, stats: weddingStats },
+  birthday: { normalise: normaliseBirthdayData, skeleton: makeBirthdaySkeleton, grow: growBirthday, stats: birthdayStats },
+  match:    { normalise: normaliseMatchData, skeleton: makeMatchSkeleton, grow: growMatch, stats: matchStats }
 };
 
-// details = { occasion, name, date, place, seed, style (marathon), data: {…}, product }
+// "12/06/2027", "12-6-27", "2027-06-12" → "12.06.2027", so the way a date is
+// typed never changes the design. Anything else is kept as written.
+function canonicalDate(text) {
+  const clean = String(text || '').trim();
+  let m = clean.match(/^(\d{1,2})[.\/\-\s](\d{1,2})[.\/\-\s](\d{2}|\d{4})$/);
+  if (m) {
+    const year = m[3].length === 2 ? '20' + m[3] : m[3];
+    return m[1].padStart(2, '0') + '.' + m[2].padStart(2, '0') + '.' + year;
+  }
+  m = clean.match(/^(\d{4})[.\/\-](\d{1,2})[.\/\-](\d{1,2})$/);
+  if (m) return m[3].padStart(2, '0') + '.' + m[2].padStart(2, '0') + '.' + m[1];
+  return clean.toLowerCase();
+}
+
+// details = { occasion, name, date, place, seed, style (marathon), data: {…},
+//             product, colours: { fabric, club }, showNumbers }
 function buildDesign(details) {
   const occasion = details.occasion in OCCASION_ENGINES ? details.occasion : 'wedding';
   const engine = OCCASION_ENGINES[occasion];
-  const seedKey = removeAccents(details.name).toUpperCase() + '::' + details.date + '::' +
-    details.place + '::' + occasion + '::' + details.seed;
+  const seedKey = removeAccents(details.name).toUpperCase().trim() + '::' + canonicalDate(details.date) + '::' +
+    removeAccents(details.place).toUpperCase().trim() + '::' + occasion + '::' + details.seed;
   const data = engine.normalise(details.data || {});
   const print = printContext(details.product);
   let shapes, style = null;
@@ -896,10 +905,14 @@ function buildDesign(details) {
   shapes.push({ kind: 'line', colour: 'terracotta', width: Math.max(2, print.minLine),
     points: [[430, 912], [570, 912]] });
 
-  let texts = buildTextItems(details, engine.stats(data), print);
+  const statsText = details.showNumbers === false ? '' : engine.stats(data);
+  let texts = buildTextItems(details, statsText, print);
   if (occasion === 'wedding') texts = weddingMonogram(details.name).concat(texts);
 
-  return { occasion: occasion, style: style, shapes: shapes, texts: texts, data: data, print: print };
+  return {
+    occasion: occasion, style: style, shapes: shapes, texts: texts, data: data, print: print,
+    palette: resolvePalette(details.colours, occasion)
+  };
 }
 
 function cachedSkeleton(seedKey, maker) {
@@ -910,27 +923,116 @@ function cachedSkeleton(seedKey, maker) {
   return skeletonCache.get(seedKey);
 }
 
-// The data part of the order code, e.g. marathon "A-D422-T034120-I7-P…",
-// wedding "Y12-G120-I7", birthday "A34-I6", match "S2.14V1.12-I8"
-function encodeDesignCode(design) {
-  if (design.occasion === 'marathon') return MARATHON_STYLES[design.style].code + '-' + encodeRunData(design.data);
-  return OCCASION_ENGINES[design.occasion].code(design.data);
+/* --------------------------------------------------------------------------
+   10. Colour plans
+   Designs are drawn with two ROLES — "terracotta" and "ink" — and only turned
+   into real colours here, so one design can be printed three ways:
+   - light fabric (default): terracotta + ink on cream
+   - dark fabric: rust-light + cream on the fabric itself (no background)
+   - club colours (match / team orders only): the club's two colours, with a
+     too-pale colour (e.g. white on cream) swapped for brand ink so it shows
+   -------------------------------------------------------------------------- */
+const DARK_FABRIC   = '#2a1e10';   // how a dark tote is shown on screen
+const DARK_ACCENT   = '#b87050';   // rust-light: terracotta is too dark on dark fabric
+
+// Approximate county colours. The shop confirms exact club colours before printing.
+const CLUB_COLOURS = {
+  antrim:    { label: 'Antrim',    primary: '#f2b800', secondary: '#ffffff' },
+  armagh:    { label: 'Armagh',    primary: '#f47b20', secondary: '#ffffff' },
+  carlow:    { label: 'Carlow',    primary: '#c8102e', secondary: '#007a3d' },
+  cavan:     { label: 'Cavan',     primary: '#0033a0', secondary: '#ffffff' },
+  clare:     { label: 'Clare',     primary: '#f2b800', secondary: '#0033a0' },
+  cork:      { label: 'Cork',      primary: '#c8102e', secondary: '#ffffff' },
+  derry:     { label: 'Derry',     primary: '#c8102e', secondary: '#ffffff' },
+  donegal:   { label: 'Donegal',   primary: '#007a3d', secondary: '#ffd100' },
+  down:      { label: 'Down',      primary: '#c8102e', secondary: '#111111' },
+  dublin:    { label: 'Dublin',    primary: '#5cb3ff', secondary: '#0b1f4b' },
+  fermanagh: { label: 'Fermanagh', primary: '#007a3d', secondary: '#ffffff' },
+  galway:    { label: 'Galway',    primary: '#7a1e3a', secondary: '#ffffff' },
+  kerry:     { label: 'Kerry',     primary: '#007a3d', secondary: '#ffd100' },
+  kildare:   { label: 'Kildare',   primary: '#ffffff', secondary: '#111111' },
+  kilkenny:  { label: 'Kilkenny',  primary: '#111111', secondary: '#ffb81c' },
+  laois:     { label: 'Laois',     primary: '#0033a0', secondary: '#ffffff' },
+  leitrim:   { label: 'Leitrim',   primary: '#007a3d', secondary: '#ffd100' },
+  limerick:  { label: 'Limerick',  primary: '#007a3d', secondary: '#ffffff' },
+  longford:  { label: 'Longford',  primary: '#0033a0', secondary: '#ffd100' },
+  louth:     { label: 'Louth',     primary: '#c8102e', secondary: '#ffffff' },
+  mayo:      { label: 'Mayo',      primary: '#007a3d', secondary: '#c8102e' },
+  meath:     { label: 'Meath',     primary: '#007a3d', secondary: '#ffd100' },
+  monaghan:  { label: 'Monaghan',  primary: '#ffffff', secondary: '#0033a0' },
+  offaly:    { label: 'Offaly',    primary: '#007a3d', secondary: '#ffb81c' },
+  roscommon: { label: 'Roscommon', primary: '#f2d35c', secondary: '#0033a0' },
+  sligo:     { label: 'Sligo',     primary: '#111111', secondary: '#ffffff' },
+  tipperary: { label: 'Tipperary', primary: '#0033a0', secondary: '#ffd100' },
+  tyrone:    { label: 'Tyrone',    primary: '#ffffff', secondary: '#c8102e' },
+  waterford: { label: 'Waterford', primary: '#ffffff', secondary: '#0033a0' },
+  westmeath: { label: 'Westmeath', primary: '#7a1e3a', secondary: '#ffffff' },
+  wexford:   { label: 'Wexford',   primary: '#5b2c83', secondary: '#ffd100' },
+  wicklow:   { label: 'Wicklow',   primary: '#0033a0', secondary: '#ffd100' }
+};
+
+function relativeLuminance(hex) {
+  const v = parseInt(hex.replace('#', ''), 16);
+  const channel = function(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  return 0.2126 * channel((v >> 16) & 255) + 0.7152 * channel((v >> 8) & 255) + 0.0722 * channel(v & 255);
+}
+
+function contrastRatio(a, b) {
+  const la = relativeLuminance(a), lb = relativeLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+// colours = { fabric: 'light' | 'dark', club: null | key of CLUB_COLOURS | { primary, secondary } }
+function resolvePalette(colours, occasion) {
+  const dark = !!colours && colours.fabric === 'dark';
+  const ground = dark ? DARK_FABRIC : BRAND_COLOURS.cream;
+  const brandAccent = dark ? DARK_ACCENT : BRAND_COLOURS.terracotta;
+  const brandInk = dark ? BRAND_COLOURS.cream : BRAND_COLOURS.ink;
+  const palette = {
+    dark: dark, ground: ground, printGround: !dark,
+    terracotta: brandAccent, ink: brandInk,          // artwork roles
+    textInk: brandInk, textAccent: brandAccent,       // text always stays brand
+    clubLabel: null
+  };
+
+  // Club colours: team designs only
+  const club = colours && colours.club
+    ? (typeof colours.club === 'string' ? CLUB_COLOURS[colours.club] : colours.club)
+    : null;
+  if (club && occasion === 'match') {
+    const legible = function(hex) { return contrastRatio(hex, ground) >= 1.8 ? hex : null; };
+    palette.terracotta = legible(club.primary) || brandInk;
+    palette.ink = legible(club.secondary) || (palette.terracotta === brandInk ? brandAccent : brandInk);
+    palette.clubLabel = club.label || 'Custom';
+  }
+  return palette;
+}
+
+// The distinct inks a design uses (for the print-file header)
+function inksUsed(design) {
+  const inks = new Set();
+  design.shapes.forEach(function(shape) { inks.add(design.palette[shape.colour]); });
+  design.texts.forEach(function(item) { inks.add(textColour(design, item.colour)); });
+  return Array.from(inks);
+}
+
+function textColour(design, role) {
+  return role === 'ink' ? design.palette.textInk : design.palette.textAccent;
 }
 
 /* --------------------------------------------------------------------------
-   10. Preview on a p5 canvas / p5.Graphics (screen only — not the print file)
+   11. Preview on a p5 canvas / p5.Graphics (screen only — not the print file)
    -------------------------------------------------------------------------- */
 function paintDesign(p, sizePx, design) {
   const k = sizePx / DESIGN_SIZE;
   p.push();
-  p.background(BRAND_COLOURS.cream);
-  design.shapes.forEach(function(shape) { paintShape(p, shape, k); });
-  design.texts.forEach(function(item) { paintText(p, item, k); });
+  p.background(design.palette.ground);
+  design.shapes.forEach(function(shape) { paintShape(p, shape, k, design.palette[shape.colour]); });
+  design.texts.forEach(function(item) { paintText(p, item, k, textColour(design, item.colour)); });
   p.pop();
 }
 
-function paintShape(p, shape, k) {
-  const colour = BRAND_COLOURS[shape.colour];
+function paintShape(p, shape, k, colour) {
   if (shape.kind === 'line') {
     p.noFill();
     p.stroke(colour);
@@ -958,85 +1060,184 @@ function paintShape(p, shape, k) {
   }
 }
 
-function paintText(p, item, k) {
-  const label = item.text;
-  p.noStroke();
-  p.fill(BRAND_COLOURS[item.colour]);
-  p.textFont(item.font === 'serif' ? 'Merriweather' : 'Courier Prime');
-  p.textStyle(item.font === 'serif' ? 'bold' : 'normal');
+// Text is drawn with the canvas directly so it can use a font STACK:
+// Merriweather / Courier Prime first, then Noto Serif SC for Chinese names —
+// the same fonts the print file falls back to.
+function previewFont(item, sizePx) {
+  return item.font === 'serif'
+    ? '700 ' + sizePx + 'px Merriweather, "Noto Serif SC", Georgia, serif'
+    : '400 ' + sizePx + 'px "Courier Prime", "Noto Serif SC", "Courier New", monospace';
+}
+
+function paintText(p, item, k, colour) {
+  const ctx = p.drawingContext;
   let size = item.size * k;
-  p.textSize(size);
-  if (item.maxWidth && p.textWidth(label) > item.maxWidth * k) {
-    size = size * (item.maxWidth * k) / p.textWidth(label);
-    p.textSize(size);
+  ctx.save();
+  ctx.font = previewFont(item, size);
+  if (item.maxWidth) {
+    const width = ctx.measureText(item.text).width;
+    if (width > item.maxWidth * k) {
+      size = size * (item.maxWidth * k) / width;
+      ctx.font = previewFont(item, size);
+    }
   }
-  const vertical = { middle: 'center', top: 'top', bottom: 'bottom', baseline: 'alphabetic' };
-  p.textAlign(item.align, vertical[item.valign]);
-  p.text(label, item.x * k, item.y * k);
+  ctx.fillStyle = colour;
+  ctx.textAlign = item.align;
+  ctx.textBaseline = { middle: 'middle', top: 'top', bottom: 'bottom', baseline: 'alphabetic' }[item.valign];
+  ctx.fillText(item.text, item.x * k, item.y * k);
+  ctx.restore();
 }
 
 /* --------------------------------------------------------------------------
-   11. Print file (SVG)
-   - Solid brand colours only, no transparency anywhere
-   - Background on its own layer, so it can be dropped for cream stock
-   - Text converted to outlines with opentype.js; if the fonts can't load
-     (offline), live <text> is written with a clear PRINT NOTE instead
+   12. Print file (SVG)
+   - Solid colours only, no transparency anywhere
+   - Background on its own layer (light fabric), so it can be dropped for cream stock
+   - Text converted to outlines with opentype.js, glyph by glyph:
+     Latin → Latin Extended → Noto Serif SC (Chinese), loaded only when needed.
+     Characters no font has are reported, never silently dropped.
+   - If the fonts can't load (offline), live <text> is written with a PRINT NOTE
    -------------------------------------------------------------------------- */
-let printFontsPromise = null;
+const FONTSOURCE = 'https://cdn.jsdelivr.net/npm/@fontsource/';
+const PRINT_FONT_FILES = {
+  serif: [FONTSOURCE + 'merriweather@5.3.0/files/merriweather-latin-700-normal.woff',
+          FONTSOURCE + 'merriweather@5.3.0/files/merriweather-latin-ext-700-normal.woff'],
+  mono:  [FONTSOURCE + 'courier-prime@5.3.0/files/courier-prime-latin-400-normal.woff',
+          FONTSOURCE + 'courier-prime@5.3.0/files/courier-prime-latin-ext-400-normal.woff']
+};
+// Chinese: Noto Serif SC is split into ~100 small files by Unicode range.
+// Its stylesheet says which file holds which characters; we fetch only those.
+const CJK_FONT = {
+  base: FONTSOURCE + 'noto-serif-sc@5.3.1/',
+  weight: { serif: 700, mono: 400 }
+};
+
+const fontFileCache = new Map();
+
+function fetchFont(url) {
+  if (!fontFileCache.has(url)) {
+    fontFileCache.set(url, fetch(url)
+      .then(function(response) {
+        if (!response.ok) throw new Error('Font download failed: ' + url);
+        return response.arrayBuffer();
+      })
+      .then(function(buffer) { return opentype.parse(buffer); })
+      .catch(function(error) { fontFileCache.delete(url); throw error; }));
+  }
+  return fontFileCache.get(url);
+}
 
 function loadPrintFonts() {
   if (typeof opentype === 'undefined') return Promise.reject(new Error('opentype.js not loaded'));
-  if (!printFontsPromise) {
-    const load = function(url) {
-      return fetch(url)
-        .then(function(response) {
-          if (!response.ok) throw new Error('Font download failed: ' + url);
-          return response.arrayBuffer();
-        })
-        .then(function(buffer) { return opentype.parse(buffer); });
-    };
-    printFontsPromise = Promise.all([load(PRINT_FONT_URLS.serif), load(PRINT_FONT_URLS.mono)])
-      .then(function(fonts) { return { serif: fonts[0], mono: fonts[1] }; })
-      .catch(function(error) { printFontsPromise = null; throw error; });
-  }
-  return printFontsPromise;
+  return Promise.all([Promise.all(PRINT_FONT_FILES.serif.map(fetchFont)), Promise.all(PRINT_FONT_FILES.mono.map(fetchFont))])
+    .then(function(lists) { return { serif: lists[0], mono: lists[1] }; });
 }
 
-// Returns { svg, outlined } — outlined is false when text fell back to <text>
+function hasGlyph(font, ch) {
+  return font.charToGlyph(ch).index > 0;
+}
+
+// Unicode-range index of the Chinese font, per weight
+const cjkIndexCache = new Map();
+
+function loadCjkIndex(weight) {
+  if (!cjkIndexCache.has(weight)) {
+    cjkIndexCache.set(weight, fetch(CJK_FONT.base + weight + '.css')
+      .then(function(response) { return response.text(); })
+      .then(function(css) {
+        const blocks = css.match(/@font-face\s*{[^}]*}/g) || [];
+        return blocks.map(function(block) {
+          const file = (block.match(/url\(\.\/(files\/[^)]+\.woff)\)/) || [])[1];
+          const ranges = (block.match(/unicode-range:\s*([^;]+);/) || [])[1] || '';
+          return {
+            file: file,
+            ranges: ranges.split(',').map(function(part) {
+              const bounds = part.trim().replace(/U\+/i, '').split('-');
+              const start = parseInt(bounds[0], 16);
+              return [start, bounds[1] ? parseInt(bounds[1], 16) : start];
+            })
+          };
+        }).filter(function(entry) { return entry.file; });
+      })
+      .catch(function(error) { cjkIndexCache.delete(weight); throw error; }));
+  }
+  return cjkIndexCache.get(weight);
+}
+
+// Add the Chinese font files that cover `chars` to a font list
+function withCjkFonts(fonts, chars, weight) {
+  if (!chars.size) return Promise.resolve(fonts);
+  return loadCjkIndex(weight).then(function(index) {
+    const files = new Set();
+    chars.forEach(function(ch) {
+      const code = ch.codePointAt(0);
+      index.forEach(function(entry) {
+        if (entry.ranges.some(function(r) { return code >= r[0] && code <= r[1]; })) files.add(entry.file);
+      });
+    });
+    return Promise.all(Array.from(files).map(function(file) { return fetchFont(CJK_FONT.base + file); }));
+  }).then(function(extra) { return fonts.concat(extra); })
+    .catch(function() { return fonts; });         // offline → those characters are reported missing
+}
+
+// Returns { svg, outlined, missing } — outlined is false when text fell back
+// to <text>; missing lists characters no print font could draw.
 function buildDesignSvg(design, meta) {
   return loadPrintFonts()
-    .then(function(fonts) { return { svg: writeSvg(design, meta, fonts), outlined: true }; })
-    .catch(function() { return { svg: writeSvg(design, meta, null), outlined: false }; });
+    .then(function(base) {
+      const need = { serif: new Set(), mono: new Set() };
+      design.texts.forEach(function(item) {
+        Array.from(item.text).forEach(function(ch) {
+          if (ch.trim() && !base[item.font].some(function(font) { return hasGlyph(font, ch); })) need[item.font].add(ch);
+        });
+      });
+      return Promise.all([
+        withCjkFonts(base.serif, need.serif, CJK_FONT.weight.serif),
+        withCjkFonts(base.mono, need.mono, CJK_FONT.weight.mono)
+      ]);
+    })
+    .then(function(lists) {
+      const missing = new Set();
+      const svg = writeSvg(design, meta, { serif: lists[0], mono: lists[1] }, missing);
+      return { svg: svg, outlined: true, missing: Array.from(missing) };
+    })
+    .catch(function() {
+      return { svg: writeSvg(design, meta, null, new Set()), outlined: false, missing: [] };
+    });
 }
 
-function writeSvg(design, meta, fonts) {
+function writeSvg(design, meta, fonts, missing) {
   const mm = design.print.mm;
+  const palette = design.palette;
   const out = [];
   out.push('<?xml version="1.0" encoding="UTF-8"?>');
   out.push('<!-- inky (印纪) print file');
   out.push('     order code: ' + meta.orderCode);
+  if (meta.designKey) out.push('     design key: ' + meta.designKey);
   out.push('     product:    ' + PRODUCTS[design.print.product].label + ' (' + mm + ' × ' + mm + ' mm)');
-  out.push('     colours:    terracotta ' + BRAND_COLOURS.terracotta + ', ink ' + BRAND_COLOURS.ink +
-    ' on cream ' + BRAND_COLOURS.cream);
+  out.push('     fabric:     ' + (palette.dark ? 'dark — print straight onto the fabric, no background' : 'light'));
+  if (palette.clubLabel) out.push('     colours:    club colours (' + palette.clubLabel + ') — confirm exact shades before printing');
+  out.push('     inks:       ' + inksUsed(design).join(', '));
   out.push('     All artwork is solid colour: no transparency, no gradients.');
   out.push('     Minimum line ' + PRINT_RULES.minLineMm + ' mm, minimum dot ' + PRINT_RULES.minDotMm + ' mm. -->');
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${mm}mm" height="${mm}mm" viewBox="0 0 ${DESIGN_SIZE} ${DESIGN_SIZE}">`);
-  out.push('  <!-- Background layer: delete when printing straight onto cream / natural stock -->');
-  out.push(`  <g id="background"><rect width="${DESIGN_SIZE}" height="${DESIGN_SIZE}" fill="${BRAND_COLOURS.cream}"/></g>`);
+  if (palette.printGround) {
+    out.push('  <!-- Background layer: delete when printing straight onto cream / natural stock -->');
+    out.push(`  <g id="background"><rect width="${DESIGN_SIZE}" height="${DESIGN_SIZE}" fill="${palette.ground}"/></g>`);
+  }
 
-  // Artwork in paint order. Consecutive shapes of one colour share a group,
-  // labelled by ink, which keeps the stacking and still makes separation easy.
+  // Artwork in paint order. Consecutive shapes of one role share a group,
+  // labelled by role, which keeps the stacking and still makes separation easy.
   out.push('  <g id="artwork">');
-  let openColour = null;
+  let openRole = null;
   design.shapes.forEach(function(shape) {
-    if (shape.colour !== openColour) {
-      if (openColour) out.push('    </g>');
+    if (shape.colour !== openRole) {
+      if (openRole) out.push('    </g>');
       out.push(`    <g class="ink-${shape.colour}">`);
-      openColour = shape.colour;
+      openRole = shape.colour;
     }
-    out.push('      ' + shapeToSvg(shape));
+    out.push('      ' + shapeToSvg(shape, palette[shape.colour]));
   });
-  if (openColour) out.push('    </g>');
+  if (openRole) out.push('    </g>');
   out.push('  </g>');
 
   out.push('  <g id="text">');
@@ -1044,7 +1245,8 @@ function writeSvg(design, meta, fonts) {
     out.push('    <!-- PRINT NOTE: Convert all text to outlines in Illustrator/Inkscape before sending to xTool -->');
   }
   design.texts.forEach(function(item) {
-    out.push('    ' + (fonts ? textToSvgPath(item, fonts) : textToSvgText(item)));
+    const colour = textColour(design, item.colour);
+    out.push('    ' + (fonts ? textToSvgPath(item, fonts[item.font], colour, missing) : textToSvgText(item, colour)));
   });
   out.push('  </g>');
   out.push('</svg>');
@@ -1055,8 +1257,7 @@ function svgPoints(points) {
   return points.map(function(pt) { return pt[0].toFixed(1) + ',' + pt[1].toFixed(1); }).join(' ');
 }
 
-function shapeToSvg(shape) {
-  const colour = BRAND_COLOURS[shape.colour];
+function shapeToSvg(shape, colour) {
   if (shape.kind === 'line') {
     const tag = shape.closed ? 'polygon' : 'polyline';
     return `<${tag} points="${svgPoints(shape.points)}" fill="none" stroke="${colour}" stroke-width="${shape.width.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -1073,36 +1274,143 @@ function shapeToSvg(shape) {
   return '';
 }
 
-// Text as outlines. Vertical alignment mirrors the canvas preview, which
-// aligns to the font's em box (ascender / descender).
-function textToSvgPath(item, fonts) {
-  const font = item.font === 'serif' ? fonts.serif : fonts.mono;
-  const upm = font.unitsPerEm;
+// Split text into runs that each use the first font able to draw them
+function fontRuns(text, fonts, missing) {
+  const runs = [];
+  Array.from(text).forEach(function(ch) {
+    let font = fonts.find(function(f) { return hasGlyph(f, ch); });
+    if (!font) {
+      if (ch.trim()) missing.add(ch);
+      font = fonts[0];                     // keeps the spacing; the glyph itself is blank
+    }
+    const last = runs[runs.length - 1];
+    if (last && last.font === font) last.text += ch;
+    else runs.push({ font: font, text: ch });
+  });
+  return runs;
+}
+
+// Text as outlines. Vertical alignment mirrors the canvas preview.
+function textToSvgPath(item, fonts, colour, missing) {
+  const runs = fontRuns(item.text, fonts, missing);
+  const primary = fonts[0];
+  const upm = primary.unitsPerEm;
   let size = item.size;
-  let width = font.getAdvanceWidth(item.text, size);
+  const measure = function(s) {
+    return runs.reduce(function(sum, run) { return sum + run.font.getAdvanceWidth(run.text, s); }, 0);
+  };
+  let width = measure(size);
   if (item.maxWidth && width > item.maxWidth) {
     size = size * item.maxWidth / width;
     width = item.maxWidth;
   }
 
   let baseline = item.y;
-  if (item.valign === 'middle') baseline = item.y + size * (font.ascender + font.descender) / (2 * upm);
-  if (item.valign === 'top') baseline = item.y + size * font.ascender / upm;
-  if (item.valign === 'bottom') baseline = item.y + size * font.descender / upm;
+  if (item.valign === 'middle') baseline = item.y + size * (primary.ascender + primary.descender) / (2 * upm);
+  if (item.valign === 'top') baseline = item.y + size * primary.ascender / upm;
+  if (item.valign === 'bottom') baseline = item.y + size * primary.descender / upm;
 
   let x = item.x;
   if (item.align === 'center') x = item.x - width / 2;
   if (item.align === 'right') x = item.x - width;
 
-  return `<path fill="${BRAND_COLOURS[item.colour]}" d="${font.getPath(item.text, x, baseline, size).toPathData(2)}"/>`;
+  let d = '';
+  runs.forEach(function(run) {
+    d += run.font.getPath(run.text, x, baseline, size).toPathData(2);
+    x += run.font.getAdvanceWidth(run.text, size);
+  });
+  return `<path fill="${colour}" d="${d}"/>`;
 }
 
 // Fallback when the print fonts are unavailable
-function textToSvgText(item) {
+function textToSvgText(item, colour) {
   const anchor = { left: 'start', center: 'middle', right: 'end' }[item.align];
   const baseline = { top: 'hanging', middle: 'middle', bottom: 'text-after-edge', baseline: 'alphabetic' }[item.valign];
-  const family = item.font === 'serif' ? "Merriweather, Georgia, serif" : "'Courier Prime', 'Courier New', monospace";
+  const family = item.font === 'serif' ? "Merriweather, 'Noto Serif SC', Georgia, serif" : "'Courier Prime', 'Noto Serif SC', 'Courier New', monospace";
   const weight = item.font === 'serif' ? ' font-weight="700"' : '';
-  const label = item.text;
-  return `<text x="${item.x}" y="${item.y}" font-family="${family}"${weight} font-size="${item.size}" fill="${BRAND_COLOURS[item.colour]}" text-anchor="${anchor}" dominant-baseline="${baseline}">${escapeXml(label)}</text>`;
+  return `<text x="${item.x}" y="${item.y}" font-family="${family}"${weight} font-size="${item.size}" fill="${colour}" text-anchor="${anchor}" dominant-baseline="${baseline}">${escapeXml(item.text)}</text>`;
+}
+
+// Quick check while typing: characters outside what the print fonts cover
+// (Latin, Latin Extended, common punctuation, Chinese). Emoji etc. can't print.
+function unprintableChars(text) {
+  const bad = new Set();
+  Array.from(String(text || '')).forEach(function(ch) {
+    const c = ch.codePointAt(0);
+    const ok = (c >= 0x20 && c <= 0x24F) || (c >= 0x1E00 && c <= 0x1EFF) || (c >= 0x2000 && c <= 0x206F) ||
+      c === 0x20AC || (c >= 0x3000 && c <= 0x303F) || (c >= 0x3400 && c <= 0x4DBF) ||
+      (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0xFF00 && c <= 0xFFEF);
+    if (!ok) bad.add(ch);
+  });
+  return Array.from(bad);
+}
+
+/* --------------------------------------------------------------------------
+   13. Design key + order code
+   Without a database, the design has to travel with the customer. The DESIGN
+   KEY is every input, packed into a URL-safe string: the generator reopens it
+   exactly (generator.html#design=…). The ORDER CODE is short and readable for
+   humans, and ends in a 5-character check computed from the design key, so the
+   shop can confirm a key belongs to the code they were quoted.
+   -------------------------------------------------------------------------- */
+const DESIGN_KEY_VERSION = 1;
+
+// Every input that changes the design, in a fixed order with short names
+function designPayload(details) {
+  return {
+    v: DESIGN_KEY_VERSION,
+    o: details.occasion, n: details.name || '', d: details.date || '', p: details.place || '',
+    s: details.seed, st: details.style || 'sprigs', pr: details.product || 'tote',
+    fab: (details.colours && details.colours.fabric) || 'light',
+    cl: (details.colours && details.colours.club) || null,
+    num: details.showNumbers !== false,
+    data: details.data || {}
+  };
+}
+
+function toBase64Url(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  bytes.forEach(function(b) { binary += String.fromCharCode(b); });
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromBase64Url(text) {
+  const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = Uint8Array.from(binary, function(ch) { return ch.charCodeAt(0); });
+  return new TextDecoder().decode(bytes);
+}
+
+function encodeDesignKey(details) {
+  return toBase64Url(JSON.stringify(designPayload(details)));
+}
+
+// A design key (or a whole link containing one) → details, or null
+function decodeDesignKey(input) {
+  try {
+    const key = String(input || '').trim().replace(/^.*#design=/, '');
+    const raw = JSON.parse(fromBase64Url(key));
+    if (!raw || raw.v !== DESIGN_KEY_VERSION || !(raw.o in OCCASION_ENGINES)) return null;
+    return {
+      occasion: raw.o, name: raw.n, date: raw.d, place: raw.p, seed: raw.s, style: raw.st,
+      product: raw.pr, colours: { fabric: raw.fab, club: raw.cl }, showNumbers: raw.num !== false,
+      data: raw.data || {}
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+// 5-character check from the design key (base 32, no look-alike letters)
+function designCheck(details) {
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let h = hashString(JSON.stringify(designPayload(details)));
+  let out = '';
+  for (let i = 0; i < 5; i++) { out += alphabet[h % 32]; h = Math.floor(h / 32); }
+  return out;
+}
+
+// e.g. INK-WE-AOIFEC-12062027-K7Q2M
+function orderCodeFor(details) {
+  return generateOrderCode(details.name, details.date, details.occasion, designCheck(details));
 }
