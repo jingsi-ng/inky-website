@@ -1273,3 +1273,185 @@ details.panel-section .btn { margin-top: 10px; }
 @media (prefers-color-scheme: dark) {
   .product-art { background: #2a2016; border-bottom-color: var(--border); }
 }
+
+/* --------------------------------------------------------------------------
+   Homepage visual pass: hero rhythm, product strips, step icons,
+   designer series preview
+   -------------------------------------------------------------------------- */
+
+/* Hero — a quiet opening mark, bold → light italic → bold, an ink dot */
+.hero-opening-mark {
+  display: block;
+  width: 40px;
+  border-top: 1px solid var(--bone);
+  margin-bottom: 14px;
+}
+.hero-line { display: block; }
+.hero-line--light { font-weight: 300; font-style: italic; }
+.hero-rust-dot {
+  display: block;
+  width: 32px;
+  height: 4px;
+  background: var(--rust);
+  margin-bottom: 16px;
+}
+.hero-swipe-hint {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--amber-text);
+  margin: 18px 0 0;
+}
+@media (max-width: 820px) { .hero-swipe-hint { display: block; } }
+
+.hero-art { position: relative; }
+.hero-canvas-label {
+  position: absolute;
+  top: -22px;
+  right: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  color: var(--amber-text);
+}
+.hero-caption { margin-top: 12px; line-height: 1.5; }
+.hero-caption-link {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--amber-text);
+  text-decoration: none;
+}
+.hero-caption-link:hover { color: var(--accent); }
+.hero-caption-occasion {
+  display: block;
+  font-family: var(--font-mono);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* Products — an occasion-coloured strip with a faint motif */
+.product-strip-band {
+  position: relative;
+  height: 56px;
+  background: var(--strip);
+}
+.product-motif {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.25;
+}
+.product-rule {
+  border: 0;
+  border-top: 1px solid var(--bone);
+  margin: 10px 0;
+}
+.product-body h3 { margin-bottom: 0; }
+.product-arrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.product-arrow a {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--rust);
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+.product-card:hover .product-arrow a { transform: translateX(4px); }
+@media (prefers-color-scheme: dark) {
+  .product-rule { border-top-color: var(--border); }
+  .product-arrow a { color: var(--accent); }
+}
+
+/* How it works — line icons, firmer dividers, a closing call to action */
+.step-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin-bottom: 12px;
+  fill: none;
+  stroke: var(--rust);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* var(--bone) would vanish on the bone ground, so the next step up: amber */
+.step { border-left-color: var(--amber); }
+.steps-cta {
+  margin: 40px 0 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+.steps-cta a { color: var(--rust); text-decoration: none; margin-left: 6px; }
+.steps-cta a:hover { text-decoration: underline; }
+@media (prefers-color-scheme: dark) {
+  .step-icon { stroke: var(--accent); }
+  .step { border-left-color: var(--border); }
+  .steps-cta { color: var(--text); }
+  .steps-cta a { color: var(--accent); }
+}
+
+/* Designer series preview — three swatches left on the table */
+.designer-preview-inner {
+  display: grid;
+  grid-template-columns: 60fr 40fr;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: center;
+}
+.designer-preview h2 { font-size: 28px; font-weight: 700; margin-bottom: 14px; }
+.designer-preview-lede {
+  font-weight: 300;
+  font-style: italic;
+  font-size: 16px;
+  max-width: 28rem;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+}
+.designer-preview-link { color: var(--rust); text-decoration: none; }
+.designer-preview-link:hover { text-decoration: underline; }
+.designer-preview-art {
+  position: relative;
+  justify-self: center;
+  width: 140px;
+  height: 90px;
+  transform: rotate(-3deg);
+}
+.designer-preview-art span {
+  position: absolute;
+  top: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 3px;
+  opacity: 0.92;
+  box-shadow: 0 2px 6px rgba(42, 30, 16, 0.18);
+}
+.designer-preview-art span:nth-child(1) { left: 0;    background: #1a0a0a; transform: rotate(-8deg); }
+.designer-preview-art span:nth-child(2) { left: 40px; background: #8b1a1a; transform: rotate(0deg); top: 10px; }
+.designer-preview-art span:nth-child(3) { left: 80px; background: #e05c1a; transform: rotate(6deg); }
+@media (prefers-color-scheme: dark) {
+  .designer-preview-art span { opacity: 1; border: 0.5px solid var(--rust); }
+  .designer-preview-link { color: var(--accent); }
+}
+@media (max-width: 760px) {
+  .designer-preview-inner { grid-template-columns: 1fr; }
+  .designer-preview-art { order: -1; justify-self: start; }
+}
