@@ -484,13 +484,59 @@ img, svg, canvas { max-width: 100%; }
 /* --------------------------------------------------------------------------
    7. Generator page
    -------------------------------------------------------------------------- */
-.generator-intro {
+/* Hero: the name field is the first thing on the page */
+.generator-hero {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 40px var(--gutter) 28px;
+  padding: 32px var(--gutter) 24px;
+  text-align: center;
 }
-.generator-intro h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); }
-.generator-intro .lede { font-style: italic; color: var(--text-muted); max-width: 38rem; margin: 0; }
+.generator-hero h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); margin-bottom: 16px; }
+.generator-hero .hero-name-input {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 60px;
+  padding: 14px 20px;
+  font-size: clamp(20px, 2.4vw, 24px);
+  text-align: center;
+  background: var(--card);
+  border-color: var(--amber);
+}
+.generator-hero .hero-name-input::placeholder { font-size: 0.85em; }
+.generator-hero .field-warning:empty { display: none; }
+.generator-hero .field-warning { margin-top: 8px; }
+.hero-hint {
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 8px auto 14px;
+  max-width: 600px;
+}
+.occasion-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.occasion-pill {
+  min-height: 40px;
+  padding: 6px 16px;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.occasion-pill:hover { border-color: var(--accent-hover); }
+.occasion-pill.is-active {
+  background: var(--card);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* The hero holds the name on desktop; the panel's copy is for phone + tablet */
+@media (min-width: 1025px) { .field.panel-name-only { display: none; } }
 
 .generator-layout {
   max-width: var(--max-width);
@@ -538,9 +584,10 @@ img, svg, canvas { max-width: 100%; }
   .panel-group--details .panel-section:first-child { padding-top: 18px; }
 }
 @media (max-width: 767px) {
-  .generator-layout, .generator-intro { --gutter: 16px; }  /* canvas = screen − 32px */
-  .generator-intro { padding-top: 24px; padding-bottom: 16px; }
-  .generator-intro .lede { display: none; }
+  .generator-layout, .generator-hero { --gutter: 16px; }  /* canvas = screen − 32px */
+  .generator-hero { padding-top: 24px; padding-bottom: 20px; }
+  .generator-hero h1 { margin-bottom: 14px; }
+  .occasion-pill { padding: 6px 12px; font-size: 0.82rem; }
 }
 
 /* Desktop: keep the divider between the occasion group and the details */
@@ -565,6 +612,7 @@ img, svg, canvas { max-width: 100%; }
 .panel-section:last-child { border-bottom: 0; padding-bottom: 0; }
 .panel-section legend { padding: 0; float: left; width: 100%; }
 .panel-section legend + * { clear: both; }
+.panel-section legend.visually-hidden { width: 1px; }   /* keep it from widening the page */
 
 /* Occasion toggles — two lines: name, then a small symbolic tagline */
 .occasion-grid {
@@ -776,28 +824,37 @@ details.panel-section .btn { margin-top: 10px; }
 .canvas-frame { display: flex; flex-direction: column; align-items: center; }
 .canvas-stage { position: relative; width: 100%; }
 .canvas-container { width: 100%; display: flex; justify-content: center; }
-.canvas-overlay {
+/* Sample-name ticker on the canvas's top-left corner (until the visitor types).
+   Top, not bottom: every design puts its name and date along the bottom. */
+.canvas-ticker {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0;
-  max-width: calc(100% - 48px);
-  padding: 8px 14px;
+  top: 12px;
+  left: calc((100% - var(--canvas-size, 100%)) / 2 + 12px);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: calc(var(--canvas-size, 100%) - 24px);
+  padding: 5px 12px;
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-align: center;
-  color: var(--amber-text);
-  background: rgba(250, 246, 240, 0.88);   /* soft paper wash so it reads over strokes */
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #6e5e32;                          /* the canvas is always light */
+  background: rgba(250, 246, 240, 0.86);
   border: 1px solid var(--bone);
-  border-radius: var(--radius-btn);
+  border-radius: 999px;
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
-/* The pattern canvas is always light, so keep the overlay text dark there */
-@media (prefers-color-scheme: dark) { .canvas-overlay { color: #6e5e32; } }
-.canvas-overlay.is-hidden { opacity: 0; }
+.ticker-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8c4a2a;
+  white-space: nowrap;
+  transition: opacity 0.4s ease;
+}
+.ticker-name.is-fading { opacity: 0; }
+.ticker-cta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.canvas-ticker.is-hidden { opacity: 0; pointer-events: none; }
 .canvas-container canvas {
   display: block;
   border-radius: var(--radius);
@@ -815,7 +872,7 @@ details.panel-section .btn { margin-top: 10px; }
 }
 
 /* Compare view */
-.compare-view[hidden], .canvas-frame[hidden] { display: none; }
+.compare-view[hidden], .canvas-frame[hidden], .canvas-actions .btn[hidden] { display: none; }
 .compare-head {
   display: flex;
   align-items: center;
@@ -1528,4 +1585,34 @@ details.panel-section .btn { margin-top: 10px; }
   .work-row { grid-template-columns: 36px 1fr; gap: 12px 16px; }
   .work-number { align-self: start; padding-top: 2px; }
   .work-placeholder { grid-column: 2; }
+}
+
+/* Fullness + variation right under the canvas: quiet, part of the preview */
+.canvas-quick-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 8px 20px;
+  width: 100%;
+  max-width: var(--canvas-size, 560px);
+  margin: 14px auto 0;
+}
+.quick-control { min-width: 0; }
+.quick-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--amber-text);
+  margin-bottom: 2px;
+}
+.quick-slider-row { display: flex; align-items: center; gap: 8px; }
+.quick-slider-row input[type="range"] { flex: 1; min-width: 0; }
+.quick-slider-row .range-end { font-size: 11px; }
+.quick-slider-row { min-height: 28px; }
+.canvas-quick-controls .seed-value { min-width: 2.6em; font-size: 13px; }
+.canvas-quick-controls .btn { align-self: end; }
+@media (max-width: 560px) {
+  .canvas-quick-controls { grid-template-columns: 1fr auto; }
+  .canvas-quick-controls .quick-control:first-child { grid-column: 1 / -1; }
 }

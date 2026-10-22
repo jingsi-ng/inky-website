@@ -7,8 +7,8 @@
    ========================================================================== */
 
 // ----- Current design state -----
-// The page opens empty: until a name is typed, the canvas shows a demo
-// pattern for DEMO_NAME so it is never blank.
+// The page opens empty: until a name is typed, the canvas cycles through
+// DEMO_NAMES (or shows DEMO_NAME if the cycle hasn't started) so it is never blank.
 let currentName    = '';
 let currentDate    = '';
 let currentPlace   = '';
@@ -40,6 +40,9 @@ const COMPARE_SIZE    = 200;   // px, each Compare canvas
 const MOCKUP_SIZE     = 140;   // px, each product mockup
 const GROW_MS         = 650;   // how long new leaves / rays / petals take to grow in
 const DEMO_NAME       = 'inky';
+const DEMO_NAMES      = ['Aoife & Ciarán', 'Saoirse', 'Patrick', 'Team Kerry', 'Dundalk FC'];
+const DEMO_HOLD_MS    = 2500;  // each sample name stays this long
+const DEMO_FADE_MS    = 400;   // crossfade between sample names (matches the CSS)
 const MIN_NAME_LENGTH = 2;     // letters needed before the order code appears
 const SHOP_EMAIL      = 'hello@inky.ie';
 const JSZIP_URL       = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -48,7 +51,8 @@ const MAX_GROUP       = 100;   // names per group download
 const OCCASION_NAMES = { wedding: 'Wedding', birthday: 'Birthday', marathon: 'Marathon', match: 'Match / GAA' };
 const PRODUCT_NAMES  = { tote: 'Tote bag', coaster: 'Coaster set', keychain: 'Acrylic keychain' };
 
-let hasTypedName = false;      // overlay hides on the first keystroke, for good
+let hasTypedName = false;      // the demo ticker stops on the first keystroke, for good
+let demoName = DEMO_NAME;      // the sample name drawn while the name field is empty
 
 /* --------------------------------------------------------------------------
    p5 sketch (instance mode so it doesn't pollute global scope)
@@ -59,6 +63,7 @@ const sketch = function(p) {
     let canvasSize = getCanvasSize();
     let canvas = p.createCanvas(canvasSize, canvasSize);
     canvas.parent('canvas-container');
+    setCanvasSizeVar(canvasSize);
     p.noLoop(); // only redraw when inputs change
     buildMockups(p);
   };
@@ -82,6 +87,7 @@ const sketch = function(p) {
     let newSize = getCanvasSize();
     if (newSize !== p.width) {
       p.resizeCanvas(newSize, newSize);
+      setCanvasSizeVar(newSize);
       p.redraw();
     }
   };
@@ -91,7 +97,46 @@ mainSketch = new p5(sketch);
 
 // The name actually drawn: the visitor's, or the demo name while empty
 function patternName() {
-  return currentName.trim() ? currentName : DEMO_NAME;
+  return currentName.trim() ? currentName : demoName;
+}
+
+// The ticker and the quick controls line up with the canvas, which is centred in its column
+function setCanvasSizeVar(size) {
+  document.getElementById('single-view').style.setProperty('--canvas-size', size + 'px');
+}
+
+/* --------------------------------------------------------------------------
+   Demo ticker: before the visitor types, the canvas cycles through sample
+   names so it's clear the pattern responds to a name.
+   -------------------------------------------------------------------------- */
+let demoTimer = null;
+let demoIndex = 0;
+
+function startDemoTicker() {
+  if (currentName.trim()) { updateNameDependentUi(); return; }   // browser restored a typed name
+  if (hasTypedName) return;
+  demoIndex = 0;
+  demoName = DEMO_NAMES[0];
+  document.getElementById('ticker-name').textContent = demoName;
+  if (prefersReducedMotion) return;            // keep the first sample, no cycling
+  demoTimer = setInterval(function() {
+    const label = document.getElementById('ticker-name');
+    label.classList.add('is-fading');
+    setTimeout(function() {
+      if (hasTypedName) return;
+      demoIndex = (demoIndex + 1) % DEMO_NAMES.length;
+      demoName = DEMO_NAMES[demoIndex];
+      label.textContent = demoName;
+      label.classList.remove('is-fading');
+      triggerRedraw();
+    }, DEMO_FADE_MS);
+  }, DEMO_HOLD_MS);
+}
+
+function stopDemoTicker() {
+  clearInterval(demoTimer);
+  demoTimer = null;
+  document.getElementById('canvas-ticker').classList.add('is-hidden');
 }
 
 // Everything that defines the design — also what the design key stores
@@ -225,7 +270,7 @@ function orderEmailHref(details, code) {
 function updatePreviewLabel() {
   const label = document.getElementById('preview-label');
   if (!currentName.trim()) {
-    label.textContent = DEMO_NAME + ' · sample pattern';
+    label.textContent = demoName + ' · sample pattern';
     return;
   }
   const parts = [currentName.trim(), currentDate.trim(), currentPlace.trim()]
@@ -233,12 +278,12 @@ function updatePreviewLabel() {
   label.textContent = parts.join(' · ');
 }
 
-// First keystroke in the name field: drop the "enter your name" overlay.
+// First keystroke in the name field: stop the demo ticker.
 // Once the name has 2+ letters, show the order code + export for good.
 function updateNameDependentUi() {
   if (!hasTypedName) {
     hasTypedName = true;
-    document.getElementById('canvas-overlay').classList.add('is-hidden');
+    stopDemoTicker();
   }
   if (currentName.trim().length >= MIN_NAME_LENGTH) {
     document.querySelectorAll('[data-needs-name]').forEach(function(section) {
@@ -256,10 +301,29 @@ function checkPrintable(inputId, warningId) {
     : '';
 }
 
+// The panel and the bar under the canvas each have a seed and a fullness slider
 function setSeed(seed) {
   currentSeed = seed;
+  const label = '#' + String(seed).padStart(2, '0');
   document.getElementById('input-seed').value = seed;
-  document.getElementById('seed-value').textContent = '#' + String(seed).padStart(2, '0');
+  document.getElementById('seed-value').textContent = label;
+  document.getElementById('input-seed-inline').value = seed;
+  document.getElementById('seed-value-inline').textContent = label;
+}
+
+function setFeeling(feeling) {
+  currentFeeling = feeling;
+  document.getElementById('input-feeling').value = feeling;
+  document.getElementById('input-feeling-inline').value = feeling;
+}
+
+// Shuffle: any seed except the current one
+function shuffleSeed() {
+  let next = currentSeed;
+  while (next === currentSeed) next = 1 + Math.floor(Math.random() * 99);
+  setSeed(next);
+  if (isCompareMode) exitCompareMode();
+  triggerRedraw();
 }
 
 // Mark one button in a radio-style group as chosen
@@ -275,6 +339,7 @@ function setOccasion(occasion) {
   currentOcc = occasion;
   const buttons = document.querySelectorAll('.occasion-btn');
   selectInGroup(buttons, function(btn) { return btn.dataset.occasion === occasion; });
+  selectInGroup(document.querySelectorAll('.occasion-pill'), function(btn) { return btn.dataset.occasion === occasion; });
 
   // Repeat the chosen occasion's tagline under the grid
   buttons.forEach(function(btn) {
@@ -586,7 +651,8 @@ function copyText(text) {
 function applyDetails(d) {
   const set = function(id, value) { document.getElementById(id).value = value === undefined || value === null ? '' : value; };
   currentName = d.name || ''; currentDate = d.date || ''; currentPlace = d.place || '';
-  set('input-name', currentName); set('input-date', currentDate); set('input-place', currentPlace);
+  set('input-name', currentName); set('input-name-panel', currentName);
+  set('input-date', currentDate); set('input-place', currentPlace);
 
   setOccasion(d.occasion);
   setStyle(d.style === 'medallion' ? 'medallion' : 'sprigs');
@@ -598,8 +664,7 @@ function applyDetails(d) {
   document.getElementById('input-numbers').checked = showNumbers;
 
   const data = d.data || {};
-  currentFeeling = data.intensity === undefined ? 5 : Number(data.intensity);
-  set('input-feeling', currentFeeling);
+  setFeeling(data.intensity === undefined ? 5 : Number(data.intensity));
   Object.keys(occasionData[d.occasion]).forEach(function(key) {
     if (data[key] !== undefined) occasionData[d.occasion][key] = data[key];
   });
@@ -625,6 +690,7 @@ function applyDetails(d) {
 
   updateNameDependentUi();
   ['name', 'date', 'place'].forEach(function(f) { checkPrintable('input-' + f, 'warn-' + f); });
+  checkPrintable('input-name', 'warn-name-panel');
   triggerRedraw();
 }
 
@@ -664,9 +730,19 @@ function wireInputs() {
     document.getElementById(field.id).addEventListener('input', function(event) {
       field.apply(event.target.value);
       checkPrintable(field.id, field.warn);
-      if (field.id === 'input-name') updateNameDependentUi();
+      if (field.id === 'input-name') {
+        document.getElementById('input-name-panel').value = event.target.value;
+        checkPrintable(field.id, 'warn-name-panel');
+        updateNameDependentUi();
+      }
       scheduleRedraw();
     });
+  });
+  // The panel's name field (phone + tablet) mirrors the hero one
+  document.getElementById('input-name-panel').addEventListener('input', function(event) {
+    const hero = document.getElementById('input-name');
+    hero.value = event.target.value;
+    hero.dispatchEvent(new Event('input'));
   });
 
   // Occasion-specific data fields: [input id, occasion, key in occasionData]
@@ -708,8 +784,8 @@ function wireInputs() {
     });
   });
 
-  // Occasion buttons
-  document.querySelectorAll('.occasion-btn').forEach(function(btn) {
+  // Occasion buttons — the panel grid and the hero pills drive the same state
+  document.querySelectorAll('.occasion-btn, .occasion-pill').forEach(function(btn) {
     btn.addEventListener('click', function() {
       setOccasion(btn.dataset.occasion);
       openStep('details', true);          // this occasion's own fields live there
@@ -725,14 +801,18 @@ function wireInputs() {
     });
   });
 
-  // Sliders — instant
-  document.getElementById('input-seed').addEventListener('input', function(event) {
-    setSeed(parseInt(event.target.value, 10));
-    triggerRedraw();
+  // Sliders — instant; panel and under-canvas copies move together
+  ['input-seed', 'input-seed-inline'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', function(event) {
+      setSeed(parseInt(event.target.value, 10));
+      triggerRedraw();
+    });
   });
-  document.getElementById('input-feeling').addEventListener('input', function(event) {
-    currentFeeling = parseInt(event.target.value, 10);
-    triggerRedraw();
+  ['input-feeling', 'input-feeling-inline'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', function(event) {
+      setFeeling(parseInt(event.target.value, 10));
+      triggerRedraw();
+    });
   });
   document.getElementById('input-numbers').addEventListener('change', function(event) {
     showNumbers = event.target.checked;
@@ -768,14 +848,8 @@ function wireInputs() {
     });
   });
 
-  // Shuffle: any seed except the current one
-  document.getElementById('btn-shuffle').addEventListener('click', function() {
-    let next = currentSeed;
-    while (next === currentSeed) next = 1 + Math.floor(Math.random() * 99);
-    setSeed(next);
-    if (isCompareMode) exitCompareMode();
-    triggerRedraw();
-  });
+  document.getElementById('btn-shuffle').addEventListener('click', shuffleSeed);
+  document.getElementById('btn-shuffle-inline').addEventListener('click', shuffleSeed);
 
   document.getElementById('btn-compare').addEventListener('click', enterCompareMode);
   document.getElementById('btn-compare-close').addEventListener('click', exitCompareMode);
@@ -831,13 +905,14 @@ function readInitialValues() {
   currentName  = document.getElementById('input-name').value;
   currentDate  = document.getElementById('input-date').value;
   currentPlace = document.getElementById('input-place').value;
-  currentFeeling = parseInt(document.getElementById('input-feeling').value, 10);
+  setFeeling(parseInt(document.getElementById('input-feeling').value, 10));
   setSeed(parseInt(document.getElementById('input-seed').value, 10));
   setOccasion(currentOcc);   // sync the occasion-specific controls
 }
 
 readInitialValues();
 wireInputs();
+startDemoTicker();
 openStep('details', true);
 updateOrderCode();
 updatePreviewLabel();

@@ -43,10 +43,20 @@
   </header>
 
   <main>
-    <section class="generator-intro">
+    <!-- ===== Hero: the name goes first, the occasion right under it ===== -->
+    <section class="generator-hero">
       <p class="label">the generator</p>
       <h1>Your name becomes the pattern.</h1>
-      <p class="lede">Your name sets the shape. Your details make it grow — the more you add, the fuller it gets.</p>
+      <label class="visually-hidden" for="input-name">Your name</label>
+      <input type="text" id="input-name" class="hero-name-input" maxlength="30" placeholder="Type a name — e.g. Aoife &amp; Ciarán" value="" autocomplete="off" aria-describedby="warn-name hero-hint">
+      <span class="field-warning" id="warn-name" aria-live="polite"></span>
+      <p class="hero-hint" id="hero-hint">Every letter shapes the pattern — add a date and place to make it grow fuller.</p>
+      <div class="occasion-pills" role="radiogroup" aria-label="Occasion">
+        <button type="button" class="occasion-pill is-active" data-occasion="wedding" role="radio" aria-checked="true"><span aria-hidden="true">💍</span> Wedding</button>
+        <button type="button" class="occasion-pill" data-occasion="birthday" role="radio" aria-checked="false"><span aria-hidden="true">🎂</span> Birthday</button>
+        <button type="button" class="occasion-pill" data-occasion="marathon" role="radio" aria-checked="false"><span aria-hidden="true">🏃</span> Marathon</button>
+        <button type="button" class="occasion-pill" data-occasion="match" role="radio" aria-checked="false"><span aria-hidden="true">🏐</span> Match / GAA</button>
+      </div>
     </section>
 
     <div class="generator-layout">
@@ -108,10 +118,12 @@
           <div class="step-body" id="step-details-body" role="region" aria-labelledby="step-details-head" hidden>
         <fieldset class="panel-section">
           <legend class="visually-hidden">your details</legend>
-          <label class="field">
+          <!-- Phone + tablet only: a mirror of the hero name field, so the name
+               sits with the other details further down the page -->
+          <label class="field panel-name-only">
             <span class="label">name</span>
-            <input type="text" id="input-name" maxlength="30" placeholder="e.g. Aoife &amp; Ciarán" value="" autocomplete="off" aria-describedby="warn-name">
-            <span class="field-warning" id="warn-name" aria-live="polite"></span>
+            <input type="text" id="input-name-panel" maxlength="30" placeholder="e.g. Aoife &amp; Ciarán" value="" autocomplete="off" aria-describedby="warn-name-panel">
+            <span class="field-warning" id="warn-name-panel" aria-live="polite"></span>
           </label>
           <label class="field">
             <span class="label">date</span>
@@ -334,14 +346,37 @@
         <div class="canvas-frame" id="single-view">
           <div class="canvas-stage">
             <div id="canvas-container" class="canvas-container"></div>
-            <!-- Shown over the demo pattern until the visitor starts typing -->
-            <p class="canvas-overlay" id="canvas-overlay">Enter your name to generate your pattern</p>
+            <!-- Cycles through sample names until the visitor starts typing -->
+            <div class="canvas-ticker" id="canvas-ticker" aria-hidden="true">
+              <span class="ticker-name" id="ticker-name"></span>
+              <span class="ticker-cta">type your name above ↑</span>
+            </div>
+          </div>
+          <!-- The two most-played-with controls, right where the pattern is -->
+          <div class="canvas-quick-controls" id="canvas-quick-controls">
+            <div class="quick-control">
+              <span class="quick-label" id="quick-feeling-label">fullness</span>
+              <div class="quick-slider-row">
+                <span class="range-end" aria-hidden="true">light</span>
+                <input type="range" id="input-feeling-inline" min="0" max="10" value="5" aria-labelledby="quick-feeling-label">
+                <span class="range-end" aria-hidden="true">lush</span>
+              </div>
+            </div>
+            <div class="quick-control">
+              <span class="quick-label" id="quick-seed-label">variation</span>
+              <div class="quick-slider-row">
+                <input type="range" id="input-seed-inline" min="1" max="99" value="1" aria-labelledby="quick-seed-label">
+                <output class="seed-value" id="seed-value-inline" for="input-seed-inline">#01</output>
+              </div>
+            </div>
+            <button type="button" class="btn btn-small" id="btn-shuffle-inline">Shuffle ↺</button>
           </div>
           <p class="preview-label" id="preview-label">inky · sample pattern</p>
           <!-- See the flat design, or the design on the chosen product -->
           <div class="canvas-actions">
             <button type="button" class="btn btn-primary" id="btn-compare">Compare 4 Variations</button>
-            <button type="button" class="btn btn-secondary" id="btn-shuffle">Shuffle ↺</button>
+            <!-- Shuffle now lives in the bar under the canvas; this one stays wired but hidden -->
+            <button type="button" class="btn btn-secondary" id="btn-shuffle" hidden>Shuffle ↺</button>
           </div>
           <div class="view-toggle" role="radiogroup" aria-label="Preview">
             <button type="button" class="view-btn is-active" data-view="design" role="radio" aria-checked="true">Design</button>
