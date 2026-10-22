@@ -21,6 +21,7 @@ let currentFabric  = 'light';      // 'light' or 'dark'
 let currentClub    = '';           // '' = inky colours, a CLUB_COLOURS key, or { primary, secondary, label }
 let showNumbers    = true;
 let isCompareMode  = false;
+let previewMode    = 'design';     // 'design' or 'product' (the design on the chosen product)
 
 // The data each occasion grows from, exactly as typed
 const occasionData = {
@@ -36,7 +37,8 @@ let mockupGraphics = {};       // one small p5.Graphics per product
 
 const REDRAW_DELAY_MS = 350;   // debounce for text inputs
 const COMPARE_SIZE    = 200;   // px, each Compare canvas
-const MOCKUP_SIZE     = 120;   // px, each product mockup
+const MOCKUP_SIZE     = 140;   // px, each product mockup
+const GROW_MS         = 650;   // how long new leaves / rays / petals take to grow in
 const DEMO_NAME       = 'inky';
 const MIN_NAME_LENGTH = 2;     // letters needed before the order code appears
 const SHOP_EMAIL      = 'hello@inky.ie';
@@ -62,8 +64,18 @@ const sketch = function(p) {
   };
 
   p.draw = function() {
-    paintDesign(p, p.width, currentDesign(currentSeed));
-    paintMockups();
+    const design = currentDesign(currentSeed);
+    if (previewMode === 'product') {
+      p.clear();
+      p.background(currentFabric === 'dark' ? '#3a2e22' : '#efe6d6');
+      paintProductMockup(p, p.width, p.height, currentProduct, design, { fabric: currentFabric });
+    } else {
+      paintDesign(p, p.width, design, { shapeScale: growthScale(design, p.millis()) });
+    }
+    if (!growthRunning(p.millis())) {
+      p.noLoop();
+      paintMockups();
+    }
   };
 
   p.windowResized = function() {
@@ -119,13 +131,61 @@ function getCanvasSize() {
 }
 
 /* --------------------------------------------------------------------------
+   "Watch it grow": when the data adds shapes, they grow in one after another
+   from their base point instead of just appearing. Shapes that were already
+   there stay put — the animation shows exactly what the new data added.
+   -------------------------------------------------------------------------- */
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let shownKeys = null;          // shapes on screen before the latest change
+let growth = null;             // { start, order: Map(key → stagger index), total }
+
+// Called before each repaint: work out which shapes are new
+function planGrowth(design) {
+  const keys = design.shapes.map(shapeKey);
+  if (shownKeys && !prefersReducedMotion) {
+    const fresh = keys.filter(function(key) { return !shownKeys.has(key); });
+    if (fresh.length) {
+      const order = new Map();
+      fresh.forEach(function(key, i) { order.set(key, i); });
+      growth = { start: performance.now(), order: order, total: fresh.length };
+    }
+  }
+  shownKeys = new Set(keys);
+}
+
+function growthRunning(now) {
+  return !!growth && performance.now() - growth.start < GROW_MS + 160;
+}
+
+// 0..1 scale for each shape at this moment
+function growthScale(design) {
+  if (!growth) return null;
+  const elapsed = performance.now() - growth.start;
+  if (elapsed > GROW_MS + 160) { growth = null; return null; }
+  const stagger = Math.min(24, GROW_MS / Math.max(growth.total, 1));
+  return function(shape) {
+    const i = growth.order.get(shapeKey(shape));
+    if (i === undefined) return 1;                       // already there
+    const t = (elapsed - i * stagger) / 160;             // each shape grows over 160 ms
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    return 1 - Math.pow(1 - t, 3);                       // ease-out
+  };
+}
+
+/* --------------------------------------------------------------------------
    Redraw + UI sync
    -------------------------------------------------------------------------- */
 function triggerRedraw() {
-  if (mainSketch) mainSketch.redraw();
+  if (mainSketch) {
+    if (previewMode === 'design') planGrowth(currentDesign(currentSeed));
+    if (growth) mainSketch.loop();                     // animate until the growth is done
+    else mainSketch.redraw();
+  }
   if (isCompareMode) renderCompareGrid();
   updateOrderCode();
   updatePreviewLabel();
+  updateStepSummaries();
 }
 
 // Wait until typing pauses before repainting
@@ -184,6 +244,7 @@ function updateNameDependentUi() {
     document.querySelectorAll('[data-needs-name]').forEach(function(section) {
       section.classList.add('is-shown');
     });
+    document.getElementById('order-locked').hidden = true;
   }
 }
 
@@ -243,6 +304,40 @@ function setProduct(product) {
   });
 }
 
+/* --------------------------------------------------------------------------
+   Steps: one open at a time; closed steps show a one-line summary
+   -------------------------------------------------------------------------- */
+// Clicking an open step's header closes it; `force` always opens it
+function openStep(key, force) {
+  document.querySelectorAll('.gen-step').forEach(function(step) {
+    const isTarget = step.dataset.step === key;
+    const open = isTarget && (force || !step.classList.contains('is-open'));
+    step.classList.toggle('is-open', open);
+    step.querySelector('.step-head').setAttribute('aria-expanded', open ? 'true' : 'false');
+    step.querySelector('.step-body').hidden = !open;
+  });
+}
+
+function updateStepSummaries() {
+  const set = function(key, text) { const el = document.getElementById('sum-' + key); if (el) el.textContent = text; };
+  const details = [currentName.trim(), currentDate.trim(), currentPlace.trim()].filter(Boolean).join(' · ');
+  const design = currentDesign(currentSeed);
+  const stats = OCCASION_ENGINES[currentOcc].stats(design.data);
+  set('details', [details || 'not started', stats].filter(Boolean).join(' — '));
+  const fullness = currentFeeling <= 3 ? 'light' : currentFeeling >= 7 ? 'lush' : 'balanced';
+  set('look', fullness + ' · #' + String(currentSeed).padStart(2, '0') + (showNumbers ? '' : ' · no numbers'));
+  set('print', PRODUCT_NAMES[currentProduct] + ' · ' + currentFabric + ' fabric' +
+    (currentOcc === 'match' && currentClub ? ' · club colours' : ''));
+  set('order', document.getElementById('order-code').textContent);
+}
+
+function setPreviewMode(mode) {
+  previewMode = mode;
+  selectInGroup(document.querySelectorAll('.view-btn'), function(btn) { return btn.dataset.view === mode; });
+  shownKeys = null;        // don't animate the switch itself
+  growth = null;
+}
+
 // Little confirmation message under the canvas
 let toastTimer = null;
 function showToast(message) {
@@ -274,6 +369,7 @@ function buildMockups(p) {
     tile.appendChild(label);
     tile.addEventListener('click', function() {
       setProduct(product);
+      setPreviewMode('product');          // tapping a product shows it large
       triggerRedraw();
     });
     row.appendChild(tile);
@@ -282,44 +378,12 @@ function buildMockups(p) {
   setProduct(currentProduct);
 }
 
-// A small offscreen copy of the design for one product
-const mockupDesignBuffer = {};
-function designImageFor(product, size) {
-  if (!mockupDesignBuffer[product]) mockupDesignBuffer[product] = mainSketch.createGraphics(size, size);
-  const buffer = mockupDesignBuffer[product];
-  paintDesign(buffer, size, currentDesign(currentSeed, { product: product }));
-  return buffer;
-}
-
 function paintMockups() {
-  const fabric = currentFabric === 'dark' ? '#2a1e10' : '#e8dcc4';
-  const outline = '#8a7a5c';
   Object.keys(mockupGraphics).forEach(function(product) {
     const g = mockupGraphics[product];
-    const s = MOCKUP_SIZE;
     g.clear();
-    g.push();
-    if (product === 'tote') {
-      // handles, bag, then the print area on the front
-      g.noFill(); g.stroke(outline); g.strokeWeight(3);
-      g.arc(s * 0.5, s * 0.3, s * 0.42, s * 0.36, Math.PI, 0);
-      g.noStroke(); g.fill(fabric);
-      g.rect(s * 0.14, s * 0.28, s * 0.72, s * 0.68, 4);
-      g.image(designImageFor(product, 120), s * 0.29, s * 0.4, s * 0.42, s * 0.42);
-    } else if (product === 'coaster') {
-      g.noStroke(); g.fill('#d8cba8');
-      g.rect(s * 0.1, s * 0.1, s * 0.8, s * 0.8, 10);
-      g.image(designImageFor(product, 120), s * 0.15, s * 0.15, s * 0.7, s * 0.7);
-    } else {
-      // ring, then a small acrylic tag
-      g.noFill(); g.stroke(outline); g.strokeWeight(3);
-      g.circle(s * 0.5, s * 0.16, s * 0.16);
-      g.noStroke(); g.fill('#efe6d6'); g.stroke('#d8cba8'); g.strokeWeight(2);
-      g.rect(s * 0.25, s * 0.25, s * 0.5, s * 0.62, 12);
-      g.noStroke();
-      g.image(designImageFor(product, 120), s * 0.3, s * 0.34, s * 0.4, s * 0.4);
-    }
-    g.pop();
+    paintProductMockup(g, MOCKUP_SIZE, MOCKUP_SIZE, product,
+      currentDesign(currentSeed, { product: product }), { fabric: currentFabric });
   });
 }
 
@@ -648,6 +712,7 @@ function wireInputs() {
   document.querySelectorAll('.occasion-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
       setOccasion(btn.dataset.occasion);
+      openStep('details', true);          // this occasion's own fields live there
       triggerRedraw();
     });
   });
@@ -732,6 +797,26 @@ function wireInputs() {
   });
 
   document.getElementById('btn-svg').addEventListener('click', exportPrintFile);
+
+  // Steps: headers toggle, "Next" buttons move on
+  document.querySelectorAll('.step-head').forEach(function(head) {
+    head.addEventListener('click', function() { openStep(head.parentElement.dataset.step); });
+  });
+  document.querySelectorAll('.step-next').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      openStep(btn.dataset.next, true);
+      const head = document.querySelector('.gen-step[data-step="' + btn.dataset.next + '"] .step-head');
+      if (head && head.offsetParent) head.focus({ preventScroll: false });
+    });
+  });
+
+  // Preview: flat design, or on the product
+  document.querySelectorAll('.view-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      setPreviewMode(btn.dataset.view);
+      triggerRedraw();
+    });
+  });
   document.getElementById('btn-group').addEventListener('click', exportGroup);
 
   document.getElementById('btn-open').addEventListener('click', function() {
@@ -753,8 +838,10 @@ function readInitialValues() {
 
 readInitialValues();
 wireInputs();
+openStep('details', true);
 updateOrderCode();
 updatePreviewLabel();
+updateStepSummaries();
 
 // Opened from a design link? Restore it once the sketch exists.
 if (location.hash.indexOf('#design=') === 0) {

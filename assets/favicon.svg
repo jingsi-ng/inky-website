@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- inky: a small laurel sprig on cream -->
+  <rect width="64" height="64" rx="14" fill="#f5ede0"/>
+  <path d="M17 51 C 24 42 32 32 44 17" fill="none" stroke="#2a1e10" stroke-width="3" stroke-linecap="round"/>
+  <path d="M44 17 C 34 16 27 23 28 33 C 38 32 44 26 44 17 Z" fill="#8c4a2a"/>
+  <path d="M27 38 C 20 33 12 34 9 40 C 15 45 23 44 27 38 Z" fill="#8c4a2a"/>
+  <path d="M35 30 C 40 37 47 40 53 37 C 50 30 42 27 35 30 Z" fill="#2a1e10"/>
+</svg>

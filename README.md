@@ -75,6 +75,15 @@ the same print-ready SVG; there is no PNG export.
 The full build spec — including exact CSS, nav/active-state rules and compare-mode behaviour —
 is in [`docs/inky-claude-code-prompt.md`](docs/inky-claude-code-prompt.md).
 
+## Look and feel extras
+
+- Homepage product cards and "how it works" use real designs drawn by the engine
+  (`paintProductMockup` in `growth.js`, set up in `main.js`).
+- Generator: steps that fold into one-line summaries, a "Design / On the product" preview,
+  and new leaves / rays / petals grow in when the data changes.
+- `assets/favicon.svg`, `assets/apple-touch-icon.png`, `assets/og-image.png` (share preview;
+  make `og:image` absolute once there's a domain).
+
 ## Generator page behaviour
 
 - Opens empty: the canvas shows a demo pattern for “inky” (wedding, #01) with a

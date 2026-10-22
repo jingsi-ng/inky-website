@@ -415,11 +415,6 @@ img, svg, canvas { max-width: 100%; }
 .product-card:hover { transform: translateY(-2px); }
 
 /* 40px colour strip gives each product a colour identity without photos */
-.product-strip {
-  height: 40px;
-  background: var(--strip);
-  border-bottom: 1px solid rgba(42, 30, 16, 0.08);
-}
 .product-body { padding: 22px 24px 26px; }
 .product-body .label { margin-bottom: 6px; }
 .product-body h3 { font-size: 20px; margin-bottom: 8px; }
@@ -754,7 +749,7 @@ details.panel-section .btn { margin-top: 10px; }
   background: transparent; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; }
 .mockup-tile:hover { border-color: var(--border); }
 .mockup-tile.is-current { border-color: var(--accent); background: var(--card); }
-.mockup-canvas { width: 112px !important; height: 112px !important; }
+.mockup-canvas { width: 120px !important; height: 120px !important; }
 .score-row .field { margin-bottom: 0; }
 .export-box .field { margin-bottom: 12px; }
 .export-row .btn { font-size: 0.8rem; padding: 10px 6px; white-space: nowrap; }
@@ -1169,3 +1164,112 @@ details.panel-section .btn { margin-top: 10px; }
 
 /* Clickable email addresses */
 .contact-list dd a, .collection-cta a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+/* --------------------------------------------------------------------------
+   Generator steps — one open at a time, the rest as one-line summaries
+   -------------------------------------------------------------------------- */
+.step-no {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-right: 6px;
+}
+/* Occasion buttons are one line now; the chosen tagline shows under the grid */
+.occasion-btn .occasion-tagline { display: none; }
+.occasion-btn { min-height: 46px; justify-content: center; }
+
+.gen-step { border-bottom: 1px solid var(--border); }
+.gen-step:last-of-type { border-bottom: 0; }
+.step-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "no title" ". summary";
+  align-items: baseline;
+  gap: 2px 0;
+  width: 100%;
+  padding: 16px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+.step-head .step-no { grid-area: no; }
+.step-title { grid-area: title; font-family: var(--font-serif); font-weight: 700; font-size: 1rem; }
+.step-title::after { content: ' +'; color: var(--accent); font-weight: 400; }
+.gen-step.is-open .step-title::after { content: ' –'; }
+.step-summary {
+  grid-area: summary;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gen-step.is-open .step-summary { display: none; }
+.step-head:hover .step-title { color: var(--accent); }
+.step-body { padding-bottom: 18px; }
+.step-body > .panel-section:first-child { padding-top: 0; }
+.step-body .panel-section:last-of-type { border-bottom: 0; }
+.step-next { margin-top: 6px; }
+.gen-step[data-needs-name]:not(.is-shown) { display: none; }
+.step-locked {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 16px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+.step-locked[hidden] { display: none; }
+
+/* Preview toggle: flat design ⟷ on the product */
+.view-toggle {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  overflow: hidden;
+}
+.view-btn {
+  padding: 7px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.view-btn + .view-btn { border-left: 1px solid var(--border); }
+.view-btn.is-active { background: var(--accent); color: var(--on-accent); }
+
+/* Compare + shuffle sit with the preview they act on */
+.canvas-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+
+/* Homepage: real designs on the product cards and in "how it works" */
+.product-art {
+  height: 240px;
+  background: #efe5d3;
+  border-bottom: 1px solid rgba(42, 30, 16, 0.08);
+  overflow: hidden;
+}
+.product-art canvas, .step-art canvas { width: 100% !important; height: 100% !important; }
+.step-art {
+  width: 132px;
+  height: 132px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(42, 30, 16, 0.12);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--cream);
+}
+.quote-sprig { display: block; width: 200px; height: auto; margin: 0 auto 26px; color: var(--accent); }
+@media (prefers-color-scheme: dark) {
+  .product-art { background: #2a2016; border-bottom-color: var(--border); }
+}

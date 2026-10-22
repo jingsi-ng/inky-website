@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pattern Generator — inky · 印纪</title>
   <meta name="description" content="Type a name, pick an occasion and watch a one-of-a-kind pattern grow from your details. Save your order code and we'll print it.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#f5ede0">
+  <!-- Share previews (WhatsApp, Facebook, Instagram DMs, X).
+       When the site has a domain, make og:image an absolute URL, e.g. https://inky.ie/assets/og-image.png -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="inky · 印纪">
+  <meta property="og:title" content="Make your pattern — inky · 印纪">
+  <meta property="og:description" content="Type a name, pick an occasion and watch a one-of-a-kind pattern grow from your details. Save your order code and we'll print it.">
+  <meta property="og:image" content="assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="inky · 印纪 — a wedding wreath and a marathon medallion, both grown from a name">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Noto Serif SC: only downloaded if a Chinese name is typed (unicode-range) -->
@@ -45,7 +59,7 @@
 
         <div class="panel-group panel-group--occasion">
         <fieldset class="panel-section">
-          <legend class="label">occasion</legend>
+          <legend class="label"><span class="step-no">01</span> occasion</legend>
           <div class="occasion-grid" role="radiogroup" aria-label="Occasion">
             <button type="button" class="occasion-btn is-active" data-occasion="wedding" role="radio" aria-checked="true">
               <span class="occasion-name"><span aria-hidden="true">💍</span> Wedding</span>
@@ -85,8 +99,15 @@
 
         <div class="panel-group panel-group--details">
 
+        <section class="gen-step" data-step="details">
+          <button type="button" class="step-head" id="step-details-head" aria-expanded="false" aria-controls="step-details-body">
+            <span class="step-no">02</span>
+            <span class="step-title">Your details</span>
+            <span class="step-summary" id="sum-details"></span>
+          </button>
+          <div class="step-body" id="step-details-body" role="region" aria-labelledby="step-details-head" hidden>
         <fieldset class="panel-section">
-          <legend class="label">your details</legend>
+          <legend class="visually-hidden">your details</legend>
           <label class="field">
             <span class="label">name</span>
             <input type="text" id="input-name" maxlength="30" placeholder="e.g. Aoife &amp; Ciarán" value="" autocomplete="off" aria-describedby="warn-name">
@@ -103,7 +124,6 @@
             <span class="field-warning" id="warn-place" aria-live="polite"></span>
           </label>
         </fieldset>
-
         <!-- Run data (marathon only) -->
         <fieldset class="panel-section" id="run-fields" data-occasion-only="marathon" hidden>
           <legend class="label">your run</legend>
@@ -133,7 +153,6 @@
           </label>
           <p class="hint">The further you run, the more it grows. Your splits colour the faster stretches, and your time grows the laurel.</p>
         </fieldset>
-
         <!-- Wedding data -->
         <fieldset class="panel-section" data-occasion-only="wedding">
           <legend class="label">your wedding</legend>
@@ -147,7 +166,6 @@
           </label>
           <p class="hint">Your wedding day starts the wreath; every year together adds a leaf pair, and after 22 years the branches meet. Guests gather as blossoms by the bow.</p>
         </fieldset>
-
         <!-- Birthday data -->
         <fieldset class="panel-section" data-occasion-only="birthday" hidden>
           <legend class="label">the birthday</legend>
@@ -157,7 +175,6 @@
           </label>
           <p class="hint">A new ring of petals every ten years, and a leaf for each year since.</p>
         </fieldset>
-
         <!-- Match data -->
         <fieldset class="panel-section" data-occasion-only="match" hidden>
           <legend class="label">the match</legend>
@@ -189,7 +206,17 @@
           </div>
           <p class="hint">GAA scores (goals-points) or plain numbers. The two stars are always equal — it's both sides' day. Every point adds a small star. Club colours are approximate; we confirm exact shades with you before printing.</p>
         </fieldset>
+          <button type="button" class="btn btn-small step-next" data-next="look">Next: the look →</button>
+          </div>
+        </section>
 
+        <section class="gen-step" data-step="look">
+          <button type="button" class="step-head" id="step-look-head" aria-expanded="false" aria-controls="step-look-body">
+            <span class="step-no">03</span>
+            <span class="step-title">The look</span>
+            <span class="step-summary" id="sum-look"></span>
+          </button>
+          <div class="step-body" id="step-look-body" role="region" aria-labelledby="step-look-head" hidden>
         <!-- Shared by every occasion -->
         <fieldset class="panel-section">
           <legend class="label">fullness</legend>
@@ -200,7 +227,6 @@
           </div>
           <p class="hint" id="feeling-hint">Lighter and airy, or lush with bigger leaves and a fuller laurel.</p>
         </fieldset>
-
         <fieldset class="panel-section">
           <legend class="label">design variation</legend>
           <div class="seed-row">
@@ -213,12 +239,17 @@
             <span>Print the numbers on the design (years, age, distance, score)</span>
           </label>
         </fieldset>
+          <button type="button" class="btn btn-small step-next" data-next="print">Next: printed on →</button>
+          </div>
+        </section>
 
-        <div class="panel-section panel-actions">
-          <button type="button" class="btn btn-primary" id="btn-compare">Compare 4 Variations</button>
-          <button type="button" class="btn btn-secondary" id="btn-shuffle">Shuffle ↺</button>
-        </div>
-
+        <section class="gen-step" data-step="print">
+          <button type="button" class="step-head" id="step-print-head" aria-expanded="false" aria-controls="step-print-body">
+            <span class="step-no">04</span>
+            <span class="step-title">Printed on</span>
+            <span class="step-summary" id="sum-print"></span>
+          </button>
+          <div class="step-body" id="step-print-body" role="region" aria-labelledby="step-print-head" hidden>
         <!-- What it goes on: size, fabric, price -->
         <fieldset class="panel-section">
           <legend class="label">printed on</legend>
@@ -238,9 +269,19 @@
             </select>
           </label>
         </fieldset>
+          <button type="button" class="btn btn-small step-next" data-next="order">Next: order →</button>
+          </div>
+        </section>
 
+        <section class="gen-step" data-step="order" data-needs-name>
+          <button type="button" class="step-head" id="step-order-head" aria-expanded="false" aria-controls="step-order-body">
+            <span class="step-no">05</span>
+            <span class="step-title">Order</span>
+            <span class="step-summary" id="sum-order"></span>
+          </button>
+          <div class="step-body" id="step-order-body" role="region" aria-labelledby="step-order-head" hidden>
         <!-- Order code + export stay hidden until a real name (2+ letters) is typed -->
-        <div class="panel-section order-box" data-needs-name>
+        <div class="panel-section order-box">
           <span class="label">your order code</span>
           <div class="order-code-row">
             <code class="order-code" id="order-code"></code>
@@ -252,17 +293,15 @@
           </div>
           <p class="hint">The email has everything we need to print your exact design — just add which product and how many. The link reopens this design any time.</p>
         </div>
-
-        <div class="panel-section export-box" data-needs-name>
+        <div class="panel-section export-box">
           <div class="export-row">
             <button type="button" class="btn btn-secondary" id="btn-svg">↓ Print file (SVG)</button>
           </div>
           <p class="hint">Print-ready SVG: solid inks, text as outlines, lines no thinner than 0.35 mm at the size you pick.</p>
           <p class="field-warning" id="export-warning" aria-live="polite"></p>
         </div>
-
         <!-- Group orders -->
-        <details class="panel-section group-order" data-needs-name>
+        <details class="panel-section group-order">
           <summary class="label">ordering for a team or a group?</summary>
           <label class="field">
             <span class="label">one name per line</span>
@@ -272,6 +311,10 @@
           <button type="button" class="btn btn-secondary" id="btn-group">↓ Download all (.zip)</button>
           <p class="hint" id="group-status" aria-live="polite"></p>
         </details>
+          </div>
+        </section>
+
+        <p class="step-locked" id="order-locked"><span class="step-no">05</span> Order — type a name (2+ letters) to get your order code.</p>
 
         <!-- Reopen a saved design -->
         <details class="panel-section open-design">
@@ -295,8 +338,17 @@
             <p class="canvas-overlay" id="canvas-overlay">Enter your name to generate your pattern</p>
           </div>
           <p class="preview-label" id="preview-label">inky · sample pattern</p>
-          <!-- How it looks on each product; tap one to choose it -->
-          <div class="mockups" id="mockups" role="group" aria-label="See it on a product"></div>
+          <!-- See the flat design, or the design on the chosen product -->
+          <div class="canvas-actions">
+            <button type="button" class="btn btn-primary" id="btn-compare">Compare 4 Variations</button>
+            <button type="button" class="btn btn-secondary" id="btn-shuffle">Shuffle ↺</button>
+          </div>
+          <div class="view-toggle" role="radiogroup" aria-label="Preview">
+            <button type="button" class="view-btn is-active" data-view="design" role="radio" aria-checked="true">Design</button>
+            <button type="button" class="view-btn" data-view="product" role="radio" aria-checked="false">On the product</button>
+          </div>
+          <!-- How it looks on each product; tap one to choose it (and see it large) -->
+          <div class="mockups" id="mockups" role="group" aria-label="Choose a product"></div>
         </div>
 
         <div class="compare-view" id="compare-view" hidden>

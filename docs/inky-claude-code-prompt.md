@@ -1,6 +1,6 @@
 # Claude Code Prompt: inky (印纪) — Full Website + Generative Pattern Tool
 
-> Version 7. Supersedes earlier versions. Where this document gives exact CSS,
+> Version 8. Supersedes earlier versions. Where this document gives exact CSS,
 > values or behaviour, use them as written — do not substitute your own taste.
 > Where something is listed under **Do not**, it is a hard rule.
 
@@ -33,6 +33,15 @@ Castor & Pollux (brothers who would not be parted → team). Otherwise name seri
 for print files) and JSZip 3.10.1 from `https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js`
 (loaded on first use, for group orders). No frameworks, no build step, plain `<script>` tags (works from `file://`).
 Instructor-style code: clear names, comments that explain *why*, small functions.
+
+### Every page's <head>
+
+Besides the fonts and stylesheet: `assets/favicon.svg` (a terracotta-and-ink laurel sprig on a
+cream rounded square), `assets/apple-touch-icon.png` (180 px), `theme-color` `#f5ede0`, and
+share-preview tags — `og:type`, `og:site_name`, `og:title`, `og:description`, `og:image`
+(`assets/og-image.png`, 1200×630: wordmark, tagline and two real designs, all text outlined;
+make it an absolute URL once the site has a domain), `og:image:alt`, `twitter:card`
+`summary_large_image`.
 
 ### File structure
 
@@ -259,18 +268,27 @@ text without the underline. Footer links have no active state.
 2. **Products** (`#products`, 1px bone rule above) — label `what we print`, h2
    `Things that last.`; 2×2 cards (1 column ≤640px), each with a 40px colour strip
    (cream `#f5ede0`, terracotta `#8c4a2a`, ink `#2a1e10`, bone `#d8cba8`), index `01`–`04`,
-   name (20px bold), one sentence (15px), price (Courier Prime 13px amber):
+   name (20px bold), one sentence (15px), price (Courier Prime 13px amber). Instead of a colour
+   strip, each card opens with a 240px **product mockup drawn by the growth engine**
+   (`paintProductMockup`): tote with a wedding wreath (Aoife & Ciarán, 8 years, 120 guests),
+   keychain with a marathon medallion, a scattered set of four coasters showing four seeds of the
+   same birthday flower (Saoirse, 34) — proving "four patterns from the same name" — and an
+   event set (tote + keychain) with a match design in Louth colours. Redrawn on resize and once
+   fonts load.
    Tote Bag — "Your generated pattern, screen-printed. Reusable, sturdy, yours." — `€18 – 28`;
    Acrylic Keychain — "Your name and your pattern, UV-printed on 3mm acrylic." — `€8 – 14`;
    Coaster Set — "Four coasters. Four patterns generated from the same name." — `€22 – 35`;
    Event Package — "Custom merchandise for marathons, societies and clubs." — `Get a quote`.
 3. **How it works** (`#how`, `.section--bone`) — label `the process`, h2
-   `How your design is made.`; three steps with faint vertical dividers; `01` rust 24px,
+   `How your design is made.`; three steps with faint vertical dividers, each opening with a
+   132px picture of **the same marathon design at three growth stages** (not started, halfway,
+   finished); `01` rust 24px,
    18px bold heading, italic sentence: Enter your details — "Name, date, place, occasion —
    these become the seed for everything." / The pattern generates — "Your name sets the shape;
    your details make it grow. No two look the same." / Lock it with a code — "Copy your order
    code. Send it to us. We reproduce your exact design."
-4. **Quote** — centred, max 640px, italic 300 ~26px rust: "Names become patterns. Moments
+4. **Quote** — a thin rust laurel sprig (inline SVG, 200px wide, leaves swept toward both
+   ends) above it; centred, max 640px, italic 300 ~26px rust: "Names become patterns. Moments
    become objects. You become permanent." Caption label `— the idea behind every inky design`.
 5. **Footer** (§3.5).
 
@@ -299,6 +317,30 @@ until the name has ≥ 2 characters, then stay visible even if the name is clear
 falls back to the `inky` demo).
 
 ### 6.3 Controls
+
+The occasion card stays as it is (`01 occasion`; buttons are one line — emoji + name; the chosen
+tagline shows under the grid). Everything else is grouped into **collapsible steps**
+(`.gen-step`, not `.step` — that class belongs to the homepage): `02 Your details` (details +
+the occasion's own fields), `03 The look` (fullness, variation, numbers), `04 Printed on`
+(product, fabric), `05 Order` (code, email, link, export, group order; hidden until the name has
+2+ letters, with a one-line "type a name…" note in its place). One step is open at a time; each
+closed step shows a one-line summary (e.g. "Aoife & Ciarán · 12.06.2027 · Dundalk — 8 YEARS
+TOGETHER", "balanced · #01", "Tote bag · light fabric", the order code). Each step ends with a
+`Next: … →` button. Choosing an occasion opens `02` (its fields live there). "Open a saved
+design" sits below the steps.
+
+Under the canvas (not in the panel): `Compare 4 Variations` + `Shuffle ↺`, then a two-option
+toggle **Design / On the product** (the product view draws the design on the chosen product,
+large), then the three product mockups (120px; tapping one selects that product and switches to
+the product view).
+
+**Watch it grow:** whenever new data adds shapes, the new shapes (identified by kind, colour and
+anchor point) grow in one after another from their base point — each over 160 ms, staggered so
+the whole growth takes ≈650 ms — while existing shapes stay put. Switching occasion grows the
+whole design in. No animation with `prefers-reduced-motion`.
+
+#### Field reference
+
 
 - **Occasion** — 2×2 toggle buttons, two lines each: emoji + name (Merriweather bold) and an
   italic Courier Prime 11px amber tagline: 💍 Wedding / "drawn from two trees — love that grows
@@ -334,8 +376,8 @@ falls back to the `inky` demo).
 - **Design variation** — slider 1–99, value `#01` in Courier Prime rust; hint "Drag to explore
   different arrangements for the same name." Below it a checkbox, checked by default:
   "Print the numbers on the design (years, age, distance, score)" — unchecked hides the stats line.
-- **Actions** — `Compare 4 Variations` (primary) and `Shuffle ↺` (secondary, random seed
-  ≠ current), full width, stacked.
+- **Actions** (under the canvas) — `Compare 4 Variations` (primary) and `Shuffle ↺` (secondary,
+  random seed ≠ current).
 - **Printed on** — product select with prices ("Tote bag — 20 cm print · €18–28", "Coaster — 9 cm
   · set of 4 €22–35", "Keychain — 5 cm · €8–14") and fabric select ("Light (natural, cream,
   white)" / "Dark (black, navy, brown)").

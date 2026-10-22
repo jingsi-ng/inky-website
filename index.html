@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>inky · 印纪 — Personalised print, Dundalk</title>
   <meta name="description" content="A small print studio in Dundalk. Your name becomes the pattern. We print the pattern. You keep it — on totes, keychains and coasters.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#f5ede0">
+  <!-- Share previews (WhatsApp, Facebook, Instagram DMs, X).
+       When the site has a domain, make og:image an absolute URL, e.g. https://inky.ie/assets/og-image.png -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="inky · 印纪">
+  <meta property="og:title" content="inky · 印纪 — Personalised print, Dundalk">
+  <meta property="og:description" content="A small print studio in Dundalk. Your name becomes the pattern. We print the pattern. You keep it — on totes, keychains and coasters.">
+  <meta property="og:image" content="assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="inky · 印纪 — a wedding wreath and a marathon medallion, both grown from a name">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -57,7 +71,7 @@
 
         <div class="product-grid">
           <article class="product-card card reveal">
-            <div class="product-strip" style="--strip: #f5ede0;" aria-hidden="true"></div>
+            <div class="product-art" data-art="tote" role="img" aria-label="A tote bag printed with a wedding wreath design"></div>
             <div class="product-body">
               <span class="label">01</span>
               <h3>Tote Bag</h3>
@@ -67,7 +81,7 @@
           </article>
 
           <article class="product-card card reveal">
-            <div class="product-strip" style="--strip: #8c4a2a;" aria-hidden="true"></div>
+            <div class="product-art" data-art="keychain" role="img" aria-label="An acrylic keychain printed with a marathon medallion"></div>
             <div class="product-body">
               <span class="label">02</span>
               <h3>Acrylic Keychain</h3>
@@ -77,7 +91,7 @@
           </article>
 
           <article class="product-card card reveal">
-            <div class="product-strip" style="--strip: #2a1e10;" aria-hidden="true"></div>
+            <div class="product-art" data-art="coasters" role="img" aria-label="Four coasters, each a different birthday flower for the same name"></div>
             <div class="product-body">
               <span class="label">03</span>
               <h3>Coaster Set</h3>
@@ -87,7 +101,7 @@
           </article>
 
           <article class="product-card card reveal">
-            <div class="product-strip" style="--strip: #d8cba8;" aria-hidden="true"></div>
+            <div class="product-art" data-art="event" role="img" aria-label="A club tote and keychain in Louth colours"></div>
             <div class="product-body">
               <span class="label">04</span>
               <h3>Event Package</h3>
@@ -109,16 +123,19 @@
 
         <ol class="steps">
           <li class="step reveal">
+            <div class="step-art" data-stage="0" aria-hidden="true"></div>
             <span class="step-number">01</span>
             <h3>Enter your details</h3>
             <p>Name, date, place, occasion — these become the seed for everything.</p>
           </li>
           <li class="step reveal">
+            <div class="step-art" data-stage="1" aria-hidden="true"></div>
             <span class="step-number">02</span>
             <h3>The pattern generates</h3>
             <p>Your name sets the shape; your details make it grow. No two look the same.</p>
           </li>
           <li class="step reveal">
+            <div class="step-art" data-stage="2" aria-hidden="true"></div>
             <span class="step-number">03</span>
             <h3>Lock it with a code</h3>
             <p>Copy your order code. Send it to us. We reproduce your exact design.</p>
@@ -130,6 +147,20 @@
     <!-- ===== Transformation quote ===== -->
     <section class="quote-section">
       <figure class="big-quote reveal">
+        <svg class="quote-sprig" viewBox="0 0 240 44" aria-hidden="true">
+          <defs><path id="q-leaf" d="M0 0 C 6 -7 18 -7 24 0 C 18 5 6 5 0 0 Z"/></defs>
+          <path d="M20 22 C 80 14 160 14 220 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <g fill="currentColor">
+            <use href="#q-leaf" transform="translate(40 20) rotate(-140)"/><use href="#q-leaf" transform="translate(50 19.5) rotate(140)"/>
+            <use href="#q-leaf" transform="translate(62 17.5) rotate(-140)"/><use href="#q-leaf" transform="translate(72 17.0) rotate(140)"/>
+            <use href="#q-leaf" transform="translate(84 16) rotate(-140)"/><use href="#q-leaf" transform="translate(94 15.5) rotate(140)"/>
+            <use href="#q-leaf" transform="translate(106 15) rotate(-140)"/><use href="#q-leaf" transform="translate(116 14.5) rotate(140)"/>
+            <use href="#q-leaf" transform="translate(134 15) rotate(-40)"/><use href="#q-leaf" transform="translate(124 14.5) rotate(40)"/>
+            <use href="#q-leaf" transform="translate(156 16) rotate(-40)"/><use href="#q-leaf" transform="translate(146 15.5) rotate(40)"/>
+            <use href="#q-leaf" transform="translate(178 17.5) rotate(-40)"/><use href="#q-leaf" transform="translate(168 17.0) rotate(40)"/>
+            <use href="#q-leaf" transform="translate(200 20) rotate(-40)"/><use href="#q-leaf" transform="translate(190 19.5) rotate(40)"/>
+          </g>
+        </svg>
         <blockquote>
           <p>“Names become patterns. Moments become objects. You become permanent.”</p>
         </blockquote>

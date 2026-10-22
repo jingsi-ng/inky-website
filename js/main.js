@@ -183,10 +183,84 @@ function setupHeroCanvas() {
 }
 
 /* --------------------------------------------------------------------------
+   Product cards + "how it works" pictures — real designs from the growth
+   engine, drawn once (and again on resize), so the homepage shows exactly
+   what people get rather than placeholders.
+   -------------------------------------------------------------------------- */
+const HOME_ART = {
+  tote:     function() { return designFor({ occasion: 'wedding', name: 'Aoife & Ciarán', data: { years: 8, guests: 120 } }); },
+  keychain: function() { return designFor({ occasion: 'marathon', style: 'medallion', name: 'Aoife', product: 'keychain',
+                           data: { distance: '42.195', unit: 'km', finishTime: '3:41:20', splits: HERO_SPLITS } }); },
+  coasters: function() { return [1, 2, 3, 4].map(function(seed) {
+                           return designFor({ occasion: 'birthday', name: 'Saoirse', seed: seed, product: 'coaster', data: { age: 34 } }); }); },
+  event:    function() {
+    const match = { occasion: 'match', name: 'Dundalk GAA', colours: { fabric: 'light', club: 'louth' },
+      data: { us: '2-14', them: '1-12', opponent: 'Ardee' } };
+    return [designFor(match), designFor(Object.assign({}, match, { product: 'keychain' }))];
+  }
+};
+
+// Sensible defaults for a showcase design
+function designFor(details) {
+  return buildDesign(Object.assign({
+    date: HERO_DATE, place: HERO_PLACE, seed: 1, product: 'tote',
+    colours: { fabric: 'light', club: null }, showNumbers: true
+  }, details, { data: Object.assign({ intensity: 6 }, details.data) }));
+}
+
+// The same marathon design at three stages: just started, halfway, finished
+function stageDesign(stage) {
+  const km = [0, 21.1, 42.195][stage];
+  return designFor({ occasion: 'marathon', style: 'sprigs', name: 'Aoife',
+    data: { distance: km ? String(km) : '', unit: 'km', finishTime: ['', '1:51:00', '3:41:20'][stage], splits: stage ? HERO_SPLITS : '' } });
+}
+
+function setupHomeArt() {
+  const artBoxes = document.querySelectorAll('.product-art[data-art], .step-art[data-stage]');
+  if (!artBoxes.length || typeof p5 === 'undefined' || typeof buildDesign === 'undefined') return;
+
+  new p5(function(p) {
+    const canvases = new Map();
+
+    function render() {
+      artBoxes.forEach(function(box) {
+        const w = Math.round(box.clientWidth), h = Math.round(box.clientHeight);
+        if (!w || !h) return;
+        let g = canvases.get(box);
+        if (!g || g.width !== w || g.height !== h) {
+          if (g) g.remove();
+          g = p.createGraphics(w, h);
+          g.elt.style.display = 'block';
+          box.appendChild(g.elt);
+          canvases.set(box, g);
+        }
+        g.clear();
+        if (box.dataset.art) {
+          paintProductMockup(g, w, h, box.dataset.art === 'coasters' ? 'coasters' : box.dataset.art,
+            HOME_ART[box.dataset.art](), { fabric: 'light' });
+        } else {
+          paintDesign(g, w, stageDesign(Number(box.dataset.stage)));
+        }
+      });
+    }
+
+    p.setup = function() {
+      p.noCanvas();
+      render();
+      // Repaint once the web fonts arrive, and when the layout changes size
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+      let timer = null;
+      window.addEventListener('resize', function() { clearTimeout(timer); timer = setTimeout(render, 200); });
+    };
+  });
+}
+
+/* --------------------------------------------------------------------------
    Start everything once the page is ready
    -------------------------------------------------------------------------- */
 document.addEventListener('DOMContentLoaded', function() {
   setupNavigation();
   setupScrollReveal();
   setupHeroCanvas();
+  setupHomeArt();
 });

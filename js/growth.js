@@ -1023,13 +1023,50 @@ function textColour(design, role) {
 /* --------------------------------------------------------------------------
    11. Preview on a p5 canvas / p5.Graphics (screen only — not the print file)
    -------------------------------------------------------------------------- */
-function paintDesign(p, sizePx, design) {
-  const k = sizePx / DESIGN_SIZE;
+// Fill a whole canvas with the design
+function paintDesign(p, sizePx, design, options) {
   p.push();
   p.background(design.palette.ground);
-  design.shapes.forEach(function(shape) { paintShape(p, shape, k, design.palette[shape.colour]); });
+  p.pop();
+  paintDesignAt(p, 0, 0, sizePx, design, options);
+}
+
+// Draw the design as a square at (x, y) on any canvas — e.g. on a tote.
+// options.shapeScale(shape, index) → 0..1 lets the generator "grow" new
+// shapes in from their base point; 0 hides a shape, 1 draws it fully.
+function paintDesignAt(p, x, y, sizePx, design, options) {
+  const k = sizePx / DESIGN_SIZE;
+  const scaleOf = options && options.shapeScale;
+  p.push();
+  p.translate(x, y);
+  p.noStroke();
+  p.fill(design.palette.ground);
+  p.rect(0, 0, sizePx, sizePx);
+  design.shapes.forEach(function(shape, index) {
+    const grow = scaleOf ? scaleOf(shape, index) : 1;
+    if (grow <= 0) return;
+    if (grow >= 1) { paintShape(p, shape, k, design.palette[shape.colour]); return; }
+    const anchor = shapeAnchor(shape);
+    p.push();
+    p.translate(anchor[0] * k, anchor[1] * k);
+    p.scale(grow);
+    p.translate(-anchor[0] * k, -anchor[1] * k);
+    paintShape(p, shape, k, design.palette[shape.colour]);
+    p.pop();
+  });
   design.texts.forEach(function(item) { paintText(p, item, k, textColour(design, item.colour)); });
   p.pop();
+}
+
+// Where a shape "grows from": a leaf's base, a stem's start, a dot's centre
+function shapeAnchor(shape) {
+  return shape.points ? shape.points[0] : [shape.x, shape.y];
+}
+
+// A stable identity for a shape, so the generator can tell new from old
+function shapeKey(shape) {
+  const a = shapeAnchor(shape);
+  return shape.kind + ':' + shape.colour + ':' + Math.round(a[0]) + ',' + Math.round(a[1]);
 }
 
 function paintShape(p, shape, k, colour) {
@@ -1086,6 +1123,105 @@ function paintText(p, item, k, colour) {
   ctx.textBaseline = { middle: 'middle', top: 'top', bottom: 'bottom', baseline: 'alphabetic' }[item.valign];
   ctx.fillText(item.text, item.x * k, item.y * k);
   ctx.restore();
+}
+
+/* --------------------------------------------------------------------------
+   11b. Product mockups (screen only)
+   Simple flat drawings of each product with the design placed on it — used
+   by the homepage product cards and the generator's "on the product" view.
+   paintProductMockup(g, w, h, product, designs, opts)
+     product: 'tote' | 'coaster' | 'coasters' (set of four) | 'keychain' | 'event'
+     designs: one design (or four for 'coasters'; two for 'event': tote, keychain)
+     opts.fabric: 'light' | 'dark' (colour of the tote)
+   -------------------------------------------------------------------------- */
+const MOCKUP_COLOURS = {
+  toteLight: '#e8dcc4', toteDark: '#2f241a', strap: '#8a7a5c',
+  cork: '#d8cba8', acrylic: '#f3ece0', acrylicEdge: '#d8cba8', metal: '#8a7a5c',
+  shadow: 'rgba(42, 30, 16, 0.10)'
+};
+
+function paintProductMockup(g, w, h, product, designs, opts) {
+  const list = Array.isArray(designs) ? designs : [designs];
+  const fabric = opts && opts.fabric === 'dark' ? 'dark' : 'light';
+  const s = Math.min(w, h);
+  const ox = (w - s) / 2, oy = (h - s) / 2;
+  g.push();
+  g.translate(ox, oy);
+  if (product === 'tote') drawToteMockup(g, 0, 0, s, list[0], fabric);
+  else if (product === 'coaster') drawCoasterMockup(g, s * 0.1, s * 0.1, s * 0.8, list[0], 0);
+  else if (product === 'coasters') drawCoasterSet(g, s, list);
+  else if (product === 'keychain') drawKeychainMockup(g, s * 0.5, s * 0.08, s * 0.84, list[0]);
+  else if (product === 'event') {
+    drawToteMockup(g, -s * 0.06, s * 0.02, s * 0.86, list[0], fabric);
+    drawKeychainMockup(g, s * 0.8, s * 0.36, s * 0.42, list[1] || list[0]);
+  }
+  g.pop();
+}
+
+function mockupShadow(g, x, y, w, h, r) {
+  g.noStroke();
+  g.fill(MOCKUP_COLOURS.shadow);
+  g.rect(x + w * 0.03, y + h * 0.04, w, h, r);
+}
+
+// Tote: two handles, the bag, and the print on the front (60% of the bag width)
+function drawToteMockup(g, x, y, s, design, fabric) {
+  const bagX = x + s * 0.16, bagY = y + s * 0.3, bagW = s * 0.68, bagH = s * 0.64;
+  g.noFill();
+  g.stroke(MOCKUP_COLOURS.strap);
+  g.strokeWeight(Math.max(2, s * 0.022));
+  g.strokeCap('round');
+  g.arc(x + s * 0.4, bagY + s * 0.01, s * 0.16, s * 0.34, Math.PI, 0);
+  g.arc(x + s * 0.6, bagY + s * 0.01, s * 0.16, s * 0.34, Math.PI, 0);
+  mockupShadow(g, bagX, bagY, bagW, bagH, s * 0.02);
+  g.noStroke();
+  g.fill(fabric === 'dark' ? MOCKUP_COLOURS.toteDark : MOCKUP_COLOURS.toteLight);
+  g.rect(bagX, bagY, bagW, bagH, s * 0.02);
+  const print = bagW * 0.6;
+  paintDesignAt(g, bagX + (bagW - print) / 2, bagY + bagH * 0.16, print, design);
+}
+
+// One coaster: a cork square with the design printed edge to edge (inset a touch)
+function drawCoasterMockup(g, x, y, s, design, rotation) {
+  g.push();
+  g.translate(x + s / 2, y + s / 2);
+  g.rotate(rotation || 0);
+  mockupShadow(g, -s / 2, -s / 2, s, s, s * 0.08);
+  g.noStroke();
+  g.fill(MOCKUP_COLOURS.cork);
+  g.rect(-s / 2, -s / 2, s, s, s * 0.08);
+  paintDesignAt(g, -s * 0.44, -s * 0.44, s * 0.88, design);
+  g.pop();
+}
+
+// Four coasters, four variations, slightly scattered on the table
+function drawCoasterSet(g, s, designs) {
+  const size = s * 0.42;
+  const spots = [[0.06, 0.06, -0.06], [0.52, 0.04, 0.05], [0.04, 0.52, 0.04], [0.5, 0.5, -0.04]];
+  spots.forEach(function(spot, i) {
+    drawCoasterMockup(g, s * spot[0], s * spot[1], size, designs[i % designs.length], spot[2]);
+  });
+}
+
+// Keychain: a metal ring, a short link, and a clear acrylic tag
+function drawKeychainMockup(g, cx, top, s, design) {
+  const ringR = s * 0.11;
+  const tagW = s * 0.56, tagH = s * 0.7, tagX = cx - tagW / 2, tagY = top + ringR * 2.2;
+  g.noFill();
+  g.stroke(MOCKUP_COLOURS.metal);
+  g.strokeWeight(Math.max(2, s * 0.025));
+  g.circle(cx, top + ringR, ringR * 2);
+  g.line(cx, top + ringR * 2, cx, tagY + s * 0.02);
+  mockupShadow(g, tagX, tagY, tagW, tagH, s * 0.08);
+  g.fill(MOCKUP_COLOURS.acrylic);
+  g.stroke(MOCKUP_COLOURS.acrylicEdge);
+  g.strokeWeight(Math.max(1.5, s * 0.012));
+  g.rect(tagX, tagY, tagW, tagH, s * 0.08);
+  g.noStroke();
+  g.fill(MOCKUP_COLOURS.metal);
+  g.circle(cx, tagY + s * 0.05, s * 0.035);
+  const print = tagW * 0.84;
+  paintDesignAt(g, cx - print / 2, tagY + (tagH - print) / 2 + s * 0.03, print, design);
 }
 
 /* --------------------------------------------------------------------------
